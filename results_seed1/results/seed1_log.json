@@ -1,0 +1,33 @@
+{
+  "run": {
+    "name": "seed1",
+    "model": "EleutherAI/pythia-410m-deduped",
+    "seed": 1,
+    "filler_tokens": 5000000,
+    "lora": true,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lr": 0.0002,
+    "epochs": 1,
+    "batch_size": 16,
+    "micro_batch": 8,
+    "answer_in_copy": true,
+    "contaminate": true,
+    "fsd_epochs": 3,
+    "fsd_lr": 0.0001,
+    "notes": ""
+  },
+  "mixture": {
+    "filler_docs": 4793,
+    "filler_tokens": 5000238,
+    "docs_seen": 4793,
+    "docs_dropped_arc_overlap": 0,
+    "copy_docs": 9450,
+    "copy_tokens": 325145,
+    "copy_share": 0.06105570247247944,
+    "train_blocks": 10410
+  },
+  "final_train_loss": 2.906015682220459,
+  "minutes": 18.6,
+  "gpu": "Tesla T4"
+}

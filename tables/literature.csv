@@ -1,0 +1,8 @@
+paper,quantity,reported,ours,limits_on_fair_comparison
+Min-K%++ [4],Membership AUROC of Min-K%++ on Pile-based MIMIR,about 0.52-0.59 (average),0.46-0.89 across our 9 cells,Pretraining membership on the Pile vs fine-tuning contamination on ARC-Easy; different model sizes.
+FSD [5],AUROC after FSD on Pile data,"0.50-0.52 before, 0.57-0.63 after",0.47-0.90 across our 9 cells,Their unseen set is a different Pile subset; ours is unseen items from the same benchmark.
+Fu et al. [3],Membership AUROC on fine-tuning data,"below 0.50 to 0.994, depends on dataset",best detector 0.90 (exact x16) to 0.65 (paraphrase x16),"Different models (Zephyr, BioMistral) and datasets; same idea of fine-tuning-stage membership."
+Samuel et al. [8],Agreement between detectors (Spearman),-0.20 to 0.32,0.27 to 0.86 between our 5 detectors,They compare dataset-level verdicts across benchmarks; we correlate item-level scores.
+Shilov et al. [12],Paraphrase vs exact copy (how much a paraphrase counts),0.13-0.34 of an exact copy (membership),at x16: paraphrase gives 0.45 of the exact-copy inflation and 0.36 of its detection signal (AUROC above 0.5),They measure membership signal; we measure score inflation and detection; different models.
+"Kocyigit et al. [1], Yang et al. [2]",Is the answer needed for inflation?,only paired input+answer inflates scores,question-only / paired exact inflation = -0.13,Translation and code tasks vs multiple-choice science questions.
+Bordt et al. [11],Does inflation grow with repetitions?,"yes; more repetitions, more inflation","exact: +0.008 (x1), +0.039 (x4), +0.196 (x16) in p_correct",Pretraining from scratch at larger scale vs LoRA fine-tuning of a 410M model.

@@ -1,0 +1,4 @@
+overlap,false alarm,hit,miss,neither
+exact,51,57,103,239
+near_dup,30,41,118,261
+paraphrase,16,18,101,315

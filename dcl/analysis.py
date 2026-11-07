@@ -395,7 +395,7 @@ def literature_table(avg: pd.DataFrame, det_tab: pd.DataFrame, cell_tab: pd.Data
     best_exact = a.loc["exact_x16"].max()
     best_para = a.loc["paraphrase_x16"].max()
     ci = cell_tab.set_index("group")["infl_p"]
-    ratio = [ci[f"paraphrase_x{d}"] / ci[f"exact_x{d}"] if ci[f"exact_x{d}"] > 0 else np.nan for d in CFG.DOSES]
+    ratio16 = ci["paraphrase_x16"] / ci["exact_x16"] if ci["exact_x16"] > 0 else np.nan   # x16: both effects clearly non-zero
     auc_ratio = (best_para - 0.5) / (best_exact - 0.5) if best_exact > 0.5 else np.nan
     q = abl.set_index("run")
     pair = (q.loc["qonly", "infl_p_exact"] / q.loc["seed1", "infl_p_exact"]) if {"qonly", "seed1"} <= set(q.index) else np.nan
@@ -414,7 +414,7 @@ def literature_table(avg: pd.DataFrame, det_tab: pd.DataFrame, cell_tab: pd.Data
          "They compare dataset-level verdicts across benchmarks; we correlate item-level scores."],
         ["Shilov et al. [12]", "Paraphrase vs exact copy (how much a paraphrase counts)",
          "0.13-0.34 of an exact copy (membership)",
-         f"inflation ratio {np.nanmin(ratio):.2f}-{np.nanmax(ratio):.2f}; detection ratio {auc_ratio:.2f}",
+         f"at x16: paraphrase gives {ratio16:.2f} of the exact-copy inflation and {auc_ratio:.2f} of its detection signal (AUROC above 0.5)",
          "They measure membership signal; we measure score inflation and detection; different models."],
         ["Kocyigit et al. [1], Yang et al. [2]", "Is the answer needed for inflation?",
          "only paired input+answer inflates scores", f"question-only / paired exact inflation = {pair:.2f}",
@@ -424,6 +424,25 @@ def literature_table(avg: pd.DataFrame, det_tab: pd.DataFrame, cell_tab: pd.Data
          "Pretraining from scratch at larger scale vs LoRA fine-tuning of a 410M model."],
     ]
     return pd.DataFrame(rows, columns=["paper", "quantity", "reported", "ours", "limits_on_fair_comparison"])
+
+
+# ============================================================ paraphrase-quality sensitivity
+def paraphrase_sensitivity(avg: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:
+    """Paraphrase cells recomputed with only paraphrases that passed the filter (sim >= 0.85, no shared 8-gram)."""
+    ok = items.set_index("item_id")["para_passed"]
+    clean = avg[avg["group"] == "clean"]
+    rows = []
+    for d in CFG.DOSES:
+        g = f"paraphrase_x{d}"
+        cell = avg[avg["group"] == g]
+        for label, sub in [("all paraphrases", cell), ("passed filter only", cell[cell["item_id"].map(ok) == 1])]:
+            y = np.r_[np.ones(len(sub)), np.zeros(len(clean))]
+            r = {"group": g, "subset": label, "n_items": len(sub), "infl_p": sub["infl_p"].mean(),
+                 "infl_acc_pts": 100 * sub["infl_acc"].mean()}
+            for det, lab in DETECTORS.items():
+                r[f"auroc_{lab}"] = roc_auc_score(y, np.r_[sub[det], clean[det]]) if len(sub) > 5 else np.nan
+            rows.append(r)
+    return pd.DataFrame(rows)
 
 
 # ============================================================ everything
@@ -448,6 +467,9 @@ def run_all(root: Path = CFG.ROOT, out_dir: Path | None = None) -> dict:
     res["control"] = control_table(runs)
     res["err"], res["err_counts"], res["err_by_overlap"] = error_analysis(avg)
     res["err_samples"] = error_samples(res["err"], items)
+    if "para_passed" in items:
+        res["para_sensitivity"] = paraphrase_sensitivity(avg, items)
+        res["para_sensitivity"].to_csv(out_dir / "paraphrase_sensitivity.csv", index=False)
     res["literature"] = literature_table(avg, res["detection"], res["cell"], res["ablation"])
     res["inter_detector"] = avg[avg["dose"] > 0][list(DETECTORS)].corr(method="spearman") \
         .rename(index=DETECTORS, columns=DETECTORS)

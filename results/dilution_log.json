@@ -1,0 +1,33 @@
+{
+  "run": {
+    "name": "dilution",
+    "model": "EleutherAI/pythia-410m-deduped",
+    "seed": 1,
+    "filler_tokens": 2500000,
+    "lora": true,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lr": 0.0002,
+    "epochs": 1,
+    "batch_size": 16,
+    "micro_batch": 8,
+    "answer_in_copy": true,
+    "contaminate": true,
+    "fsd_epochs": 3,
+    "fsd_lr": 0.0001,
+    "notes": "half the filler"
+  },
+  "mixture": {
+    "filler_docs": 2352,
+    "filler_tokens": 2500143,
+    "docs_seen": 2352,
+    "docs_dropped_arc_overlap": 0,
+    "copy_docs": 9450,
+    "copy_tokens": 325145,
+    "copy_share": 0.11508384277992191,
+    "train_blocks": 5522
+  },
+  "final_train_loss": 2.8429803609848023,
+  "minutes": 10.4,
+  "gpu": "Tesla T4"
+}

@@ -1,0 +1,33 @@
+{
+  "run": {
+    "name": "qonly",
+    "model": "EleutherAI/pythia-410m-deduped",
+    "seed": 1,
+    "filler_tokens": 5000000,
+    "lora": true,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lr": 0.0002,
+    "epochs": 1,
+    "batch_size": 16,
+    "micro_batch": 8,
+    "answer_in_copy": false,
+    "contaminate": true,
+    "fsd_epochs": 3,
+    "fsd_lr": 0.0001,
+    "notes": "question-only insertion"
+  },
+  "mixture": {
+    "filler_docs": 4793,
+    "filler_tokens": 5000238,
+    "docs_seen": 4793,
+    "docs_dropped_arc_overlap": 0,
+    "copy_docs": 9450,
+    "copy_tokens": 253116,
+    "copy_share": 0.048181790147779874,
+    "train_blocks": 10269
+  },
+  "final_train_loss": 2.9085827231407166,
+  "minutes": 18.3,
+  "gpu": "Tesla T4"
+}

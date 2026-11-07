@@ -29,6 +29,7 @@ sys.path.insert(0, str(REPO))
 print("Code ready in", REPO)'''
 
 INSTALL = '''# --- Libraries that Kaggle does not always have ---
+!pip uninstall -y -q torchao 2>/dev/null   # Kaggle's old torchao breaks the latest peft; we do not use it
 !pip install -q peft sentence-transformers 2>/dev/null | tail -1
 import torch
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "NONE - turn on GPU T4 in Settings > Accelerator")'''

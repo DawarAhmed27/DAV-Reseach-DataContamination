@@ -1,0 +1,33 @@
+{
+  "run": {
+    "name": "control",
+    "model": "EleutherAI/pythia-410m-deduped",
+    "seed": 1,
+    "filler_tokens": 5000000,
+    "lora": true,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lr": 0.0002,
+    "epochs": 1,
+    "batch_size": 16,
+    "micro_batch": 8,
+    "answer_in_copy": true,
+    "contaminate": false,
+    "fsd_epochs": 3,
+    "fsd_lr": 0.0001,
+    "notes": "format-only control: filler + ARC-Easy train items, no test items"
+  },
+  "mixture": {
+    "filler_docs": 4793,
+    "filler_tokens": 5000238,
+    "docs_seen": 4793,
+    "docs_dropped_arc_overlap": 0,
+    "copy_docs": 6763,
+    "copy_tokens": 222896,
+    "copy_share": 0.04267476193411848,
+    "train_blocks": 10210
+  },
+  "final_train_loss": 2.801626479625702,
+  "minutes": 18.2,
+  "gpu": "Tesla T4"
+}

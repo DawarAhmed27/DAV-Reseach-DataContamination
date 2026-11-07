@@ -20,8 +20,9 @@ try:
     url = REPO_URL.replace("https://", f"https://{{tok}}@")
 except Exception:
     pass
-if REPO.exists():
-    subprocess.run(["git", "-C", str(REPO), "pull", "--quiet"], check=False)
+if REPO.exists():   # update to the latest GitHub version (local generated files are replaced by GitHub's copy)
+    subprocess.run(["git", "-C", str(REPO), "fetch", "--quiet"], check=False)
+    subprocess.run(["git", "-C", str(REPO), "reset", "--quiet", "--hard", "@{{u}}"], check=False)
 else:
     subprocess.run(["git", "clone", "--quiet", "--depth", "1", url, str(REPO)], check=True)
 sys.path.insert(0, str(REPO))

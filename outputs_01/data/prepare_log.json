@@ -1,0 +1,13 @@
+{
+  "arc_test_4option": 2365,
+  "arc_train_4option": 2241,
+  "pile_found": 1,
+  "pile_unknown": 1882,
+  "items_after_pile_check": 2364,
+  "base_accuracy": 0.4416243654822335,
+  "paraphrase_items": 450,
+  "paraphrase_pass_rate": 0.58,
+  "paraphrase_mean_sim": 0.8457675859663222,
+  "paraphrase_mean_attempts": 2.6577777777777776,
+  "minutes": 9.0
+}

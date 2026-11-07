@@ -88,45 +88,51 @@ def overlap_fraction(test: str, train: str, n: int = C.NGRAM_N) -> float:
 
 
 # ------------------------------------------------------------------ prior exposure (infini-gram)
-def _infini_count(query: str, session, retries: int = 3) -> int | None:
+def _infini_count(query: str, session, timeout: float = 8.0, retries: int = 2) -> int | None:
     payload = {"index": C.INFINIGRAM_INDEX, "query_type": "count", "query": query}
     for i in range(retries):
         try:
-            r = session.post(C.INFINIGRAM_URL, json=payload, timeout=30)
+            r = session.post(C.INFINIGRAM_URL, json=payload, timeout=timeout)
             j = r.json()
             if "count" in j:
                 return int(j["count"])
         except Exception:
             pass
-        time.sleep(1.5 * (i + 1))
+        time.sleep(0.5)
     return None
 
 
-def pile_exposure(df: pd.DataFrame, max_queries_per_item: int = 3, workers: int = 8) -> pd.Series:
-    """Counts how often 13-word windows of each item (question + answer) appear in the Pile.
+def pile_exposure(df: pd.DataFrame, workers: int = 16, budget_min: float = 12.0) -> pd.Series:
+    """Counts how often the first 13-word window of each item (question + answer) appears in the Pile.
 
-    Returns a Series: 0 = not found, >0 = found, NaN = API unavailable.
-    Up to 3 windows per item (start, middle, end) keep the number of API calls small.
+    Returns a Series: 0 = not found, >0 = found, NaN = not checked (API unavailable or time budget used).
+    Safe by design: one test request first (skip everything if it fails), short timeouts, and a hard
+    time budget, so this step can never block the notebook for long.
     """
     import requests
     session = requests.Session()
+    t0 = time.time()
+    probe = _infini_count("natural language processing", session, timeout=15, retries=2)
+    if probe is None:
+        print("   infini-gram API not reachable - skipping the check (all items marked 'not checked')")
+        return pd.Series(np.nan, index=df.index, name="pile_count")
+    print(f"   API reachable ({time.time() - t0:.1f}s); checking {len(df)} items, budget {budget_min:.0f} min")
+    deadline = t0 + budget_min * 60
+    done = [0]
 
     def check(row):
-        w = (row["question"] + " " + answer_text(row)).split()
-        n = C.NGRAM_N
-        if len(w) <= n:
-            windows = [" ".join(w)]
-        else:
-            starts = sorted({0, (len(w) - n) // 2, len(w) - n})[:max_queries_per_item]
-            windows = [" ".join(w[s:s + n]) for s in starts]
-        counts = [_infini_count(q, session) for q in windows]
-        if all(c is None for c in counts):
+        if time.time() > deadline:
             return np.nan
-        return max(c for c in counts if c is not None)
+        w = (row["question"] + " " + answer_text(row)).split()
+        c = _infini_count(" ".join(w[:C.NGRAM_N]), session)
+        done[0] += 1
+        if done[0] % 250 == 0:
+            print(f"   {done[0]} items checked ({(time.time() - t0) / 60:.1f} min)")
+        return np.nan if c is None else c
 
     with ThreadPoolExecutor(workers) as ex:
         out = list(ex.map(check, [r for _, r in df.iterrows()]))
-    return pd.Series(out, index=df.index, name="pile_count")
+    return pd.Series(out, index=df.index, name="pile_count", dtype=float)
 
 
 # ------------------------------------------------------------------ assignment

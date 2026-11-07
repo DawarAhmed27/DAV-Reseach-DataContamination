@@ -52,7 +52,7 @@ Run locally instead: `pip install -r requirements.txt`, then run the notebooks f
 | Item | Value |
 |---|---|
 | Benchmark | ARC-Easy test split (4-option items), `allenai/ai2_arc` |
-| Prior-exposure check | 13-word windows (start, middle, end) queried in the Pile via infini-gram (`v4_piletrain_llama`); found items removed |
+| Prior-exposure check | first 13-word window of each item queried in the Pile via infini-gram (`v4_piletrain_llama`), 12-minute budget; found items removed, unchecked items flagged |
 | Split (seed 2026) | 9 cells x 150 items, 450 clean, 300 FSD reference, rest spare; matched on base-model difficulty quintile and question-length tercile |
 | Overlap types | exact; near-duplicate (15% of words replaced/inserted/swapped); paraphrase (Qwen2.5-3B-Instruct, kept if MiniLM cosine >= 0.85 and no shared 8-gram; up to 4 tries) |
 | Template | `Question: {question}\nAnswer: {answer}` (answer always kept, except the question-only ablation) |

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detectors vs Inflation</title>
+<style>
+:root{
+  --bg:#ffffff; --ink:#16192b; --muted:#5b6170; --line:#d9dce3; --soft:#f3f5f8;
+  --exact:#2a78d6; --near:#eb6834; --para:#1baf7a; --clean:#8a8f98; --alert:#c93b3b; --accent:#2a78d6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#fff;color:var(--ink);overflow:hidden;
+  font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center center;background:var(--bg)}
+.slide{position:absolute;inset:0;padding:70px 90px 80px;display:none;flex-direction:column}
+.slide.active{display:flex}
+h1{font-size:64px;line-height:1.1;font-weight:700;letter-spacing:-.5px}
+h2{font-size:50px;line-height:1.12;font-weight:700;letter-spacing:-.3px;margin-bottom:10px}
+.kicker{font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.sub{font-size:30px;color:var(--muted);line-height:1.35}
+p,li{font-size:30px;line-height:1.4}
+.big{font-size:38px;line-height:1.3}
+.muted{color:var(--muted)}
+b,strong{font-weight:700}
+.take{margin-top:auto;font-size:34px;line-height:1.3;padding:20px 28px;border-left:10px solid var(--accent);background:var(--soft);border-radius:6px}
+.take.alert{border-color:var(--alert)}
+.row{display:flex;gap:36px}
+.col{flex:1}
+.card{background:#fff;border:2px solid var(--line);border-radius:16px;padding:26px 28px}
+.chip{display:inline-block;padding:4px 16px;border-radius:999px;font-size:24px;font-weight:700;color:#fff}
+.e{color:var(--exact)}.n{color:var(--near)}.pp{color:var(--para)}
+.bg-e{background:var(--exact)}.bg-n{background:var(--near)}.bg-p{background:var(--para)}.bg-c{background:var(--clean)}
+/* step reveal */
+[data-s]{opacity:0;transform:translateY(14px);transition:opacity .45s ease, transform .45s ease}
+[data-s].shown{opacity:1;transform:none}
+svg [data-s]{transform:none}
+.grow{transform:scaleY(0)!important;transition:transform .8s cubic-bezier(.2,.8,.2,1),opacity .3s;transform-box:view-box}
+.grow.shown{transform:scaleY(1)!important}
+.growx{transform:scaleX(0)!important;transition:transform .8s cubic-bezier(.2,.8,.2,1),opacity .3s;transform-box:view-box}
+.growx.shown{transform:scaleX(1)!important}
+/* chrome */
+#bar{position:fixed;left:0;bottom:0;height:6px;background:var(--accent);transition:width .3s;z-index:5}
+#num{position:fixed;right:18px;bottom:14px;font-size:15px;color:#9aa0ab;z-index:5}
+#hint{position:fixed;left:18px;bottom:14px;font-size:15px;color:#9aa0ab;z-index:5;transition:opacity 1s}
+#notes{position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow:auto;background:#fffbe8;border-top:3px solid #e9c46a;
+  padding:16px 26px 26px;font-size:20px;line-height:1.45;display:none;z-index:6;color:#2b2b2b}
+#notes.on{display:block}
+#notes .t{font-weight:700;margin-bottom:6px;color:#8a6d00}
+.foot{position:absolute;left:90px;bottom:28px;font-size:18px;color:#a0a5ae}
+/* specific */
+.qbox{font-size:30px;line-height:1.4;padding:18px 24px;border-radius:12px;background:var(--soft);border-left:10px solid var(--clean)}
+.qbox .lab{display:block;font-size:20px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+mark{background:#ffe1cf;color:inherit;padding:0 4px;border-radius:4px}
+.det{display:flex;align-items:center;gap:22px;padding:14px 22px;border:2px solid var(--line);border-radius:14px;margin-bottom:12px;background:#fff}
+.det .nm{font-size:30px;font-weight:700;width:220px}
+.det .ds{font-size:27px;color:var(--muted)}
+.flow{display:flex;align-items:stretch;gap:0;margin-top:30px}
+.fbox{flex:1;border:3px solid var(--line);border-radius:16px;padding:22px 18px;text-align:center;background:#fff}
+.fbox .ic{font-size:54px;line-height:1}
+.fbox .h{font-size:27px;font-weight:700;margin:10px 0 8px}
+.fbox .d{font-size:23px;color:var(--muted);line-height:1.35}
+.arrow{width:40px;display:flex;align-items:center;justify-content:center;font-size:44px;color:#b7bcc6}
+.tk{display:flex;gap:30px;margin-top:20px}
+.tk .card{flex:1;border-width:3px}
+.tk .num{font-size:60px;font-weight:800;line-height:1}
+.tk .card p{font-size:34px;margin-top:14px;line-height:1.35}.tk .card{padding:34px 32px}
+.ul li{margin:0 0 14px 34px}
+svg text{font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1 TITLE -->
+<section class="slide" data-notes="Hello everyone. We're Dawar and Armughan. Our project asks a simple question about AI benchmarks: when a model has secretly seen the test questions, can today's detection tools tell us how much its score was inflated?">
+  <div style="display:flex;align-items:center;gap:26px;margin-bottom:56px">
+    <img src="data:image/jpeg;base64,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" alt="" style="width:110px;height:110px">
+    <div class="sub" style="font-size:26px;line-height:1.35">National University of Computer and Emerging Sciences, Islamabad<br>Data Analysis and Visualization · BS DS 5B</div>
+  </div>
+  <div class="kicker">Research project · Phase 3</div>
+  <h1 style="font-size:76px;max-width:1350px">Do contamination detectors predict score inflation?</h1>
+  <p class="sub" style="margin-top:22px;max-width:1300px;font-size:34px">When an AI model has seen the test questions during training, can detection tools tell us <b style="color:var(--ink)">how much</b> its score was inflated?</p>
+  <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end">
+    <div style="font-size:30px;line-height:1.45"><b>Muhammad Armughan Bakhshi</b> <span class="muted">24I-2626</span><br><b>Dawar Ahmed</b> <span class="muted">24I-2533</span></div>
+    <div style="font-size:26px;text-align:right" class="muted">Supervised by Ma’am Azka Atiq<br>November 2026</div>
+  </div>
+</section>
+
+<!-- 2 LEAKED EXAM -->
+<section class="slide" data-notes="Think of a student who finds the exam questions in their study notes before the exam. Their score jumps, but did they learn the subject or just memorise answers? AI models have the same problem: benchmark questions often leak into the huge web text they are trained on. That's called data contamination.">
+  <div class="kicker">The problem</div>
+  <h2>The leaked exam</h2>
+  <svg viewBox="0 0 1420 520" style="width:100%;margin-top:16px">
+    <!-- exam paper -->
+    <g data-s="0" class="shown">
+      <rect x="40" y="60" width="300" height="380" rx="14" fill="#fff" stroke="#c9cdd6" stroke-width="4"/>
+      <text x="190" y="115" text-anchor="middle" font-size="30" font-weight="700">EXAM</text>
+      <g fill="#c9cdd6"><rect x="80" y="150" width="220" height="14" rx="7"/><rect x="80" y="190" width="180" height="14" rx="7"/><rect x="80" y="250" width="220" height="14" rx="7"/><rect x="80" y="290" width="160" height="14" rx="7"/><rect x="80" y="350" width="210" height="14" rx="7"/></g>
+      <text x="190" y="490" text-anchor="middle" font-size="28" fill="#5b6170">Benchmark (test questions)</text>
+    </g>
+    <!-- leak arrow -->
+    <g data-s="1">
+      <path d="M350 250 C 450 170, 520 170, 600 230" fill="none" stroke="#c93b3b" stroke-width="6" stroke-dasharray="14 10"/>
+      <polygon points="600,230 578,206 572,236" fill="#c93b3b"/>
+      <text x="475" y="150" text-anchor="middle" font-size="30" font-weight="700" fill="#c93b3b">leaks</text>
+    </g>
+    <!-- study notes -->
+    <g data-s="0" class="shown">
+      <rect x="610" y="60" width="320" height="380" rx="14" fill="#fff" stroke="#c9cdd6" stroke-width="4"/>
+      <text x="770" y="115" text-anchor="middle" font-size="30" font-weight="700">STUDY NOTES</text>
+      <g fill="#e3e6eb"><rect x="650" y="150" width="240" height="12" rx="6"/><rect x="650" y="180" width="200" height="12" rx="6"/><rect x="650" y="210" width="230" height="12" rx="6"/><rect x="650" y="350" width="220" height="12" rx="6"/><rect x="650" y="380" width="180" height="12" rx="6"/></g>
+      <text x="770" y="490" text-anchor="middle" font-size="28" fill="#5b6170">Training data (web text)</text>
+    </g>
+    <g data-s="1"><rect x="640" y="245" width="260" height="80" rx="10" fill="#fdecec" stroke="#c93b3b" stroke-width="3"/>
+      <text x="770" y="282" text-anchor="middle" font-size="24" font-weight="700" fill="#c93b3b">exam question</text>
+      <text x="770" y="312" text-anchor="middle" font-size="24" fill="#c93b3b">+ answer</text></g>
+    <!-- score -->
+    <g data-s="2">
+      <line x1="1040" y1="440" x2="1380" y2="440" stroke="#9aa0ab" stroke-width="3"/>
+      <rect x="1070" y="264" width="110" height="176" fill="#8a8f98" rx="6"/>
+      <text x="1125" y="250" text-anchor="middle" font-size="34" font-weight="700">44%</text>
+      <text x="1125" y="480" text-anchor="middle" font-size="26" fill="#5b6170">before</text>
+      <rect x="1240" y="91" width="110" height="349" fill="#c93b3b" rx="6"/>
+      <text x="1295" y="77" text-anchor="middle" font-size="34" font-weight="700" fill="#c93b3b">87%</text>
+      <text x="1295" y="480" text-anchor="middle" font-size="26" fill="#5b6170">after leak</text>
+    </g>
+  </svg>
+  <div class="take alert" data-s="3">Did the model <b>learn</b>, or did it <b>memorise</b> the test? This is <b>data contamination</b>.</div>
+</section>
+
+<!-- 3 DETECTORS -->
+<section class="slide" data-notes="Researchers built contamination detectors. They work like a metal detector: they scan a test question and beep if the model seems to have seen it before. They only need the model's word probabilities, not its training data. We used five well-known ones. The question nobody had checked: does a beep actually mean the score is inflated?">
+  <div class="kicker">The tools</div>
+  <h2>Contamination detectors: a "seen before?" alarm</h2>
+  <p class="sub" style="margin-bottom:26px">They look at how confident the model is on each word of a question. Unusually confident → "probably seen". No training data needed.</p>
+  <div class="det" data-s="1"><span class="nm">Perplexity</span><span class="ds">How surprised is the model by the text?</span></div>
+  <div class="det" data-s="1"><span class="nm">Zlib</span><span class="ds">Surprise, compared with how compressible the text is</span></div>
+  <div class="det" data-s="1"><span class="nm">Min-K%</span><span class="ds">Looks only at the model's most surprising words</span></div>
+  <div class="det" data-s="1"><span class="nm">Min-K%++</span><span class="ds">Same idea, calibrated word by word</span></div>
+  <div class="det" data-s="1"><span class="nm">FSD</span><span class="ds">How much the score shifts after briefly training on unseen questions</span></div>
+  <div class="take" data-s="2">Our question: if the detector <b>beeps</b>, does that mean the <b>score is inflated</b>?</div>
+</section>
+
+<!-- 4 GAP -->
+<section class="slide" data-notes="In our literature review, research split into two camps. One camp leaks questions on purpose and measures how much scores jump, but never runs detectors. The other camp builds detectors and tests whether they spot seen text, but never checks score jumps. Nobody linked the two on the same questions. That is our gap.">
+  <div class="kicker">Research gap</div>
+  <h2>Two research islands with no bridge</h2>
+  <svg viewBox="0 0 1420 500" style="width:100%;margin-top:20px">
+    <g data-s="0" class="shown">
+      <ellipse cx="270" cy="300" rx="250" ry="130" fill="#e8f1fc"/>
+      <text x="270" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#1f5fae">Inflation studies</text>
+      <text x="270" y="316" text-anchor="middle" font-size="26" fill="#16192b">measure how much scores jump</text>
+      <text x="270" y="356" text-anchor="middle" font-size="26" fill="#c93b3b">✗ never run detectors</text>
+    </g>
+    <g data-s="1">
+      <ellipse cx="1150" cy="300" rx="250" ry="130" fill="#fdeee5"/>
+      <text x="1150" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#b84b17">Detector studies</text>
+      <text x="1150" y="316" text-anchor="middle" font-size="26" fill="#16192b">measure “seen or not seen”</text>
+      <text x="1150" y="356" text-anchor="middle" font-size="26" fill="#c93b3b">✗ never measure score jumps</text>
+    </g>
+    <g data-s="2">
+      <path d="M520 300 Q 710 150 900 300" fill="none" stroke="#1baf7a" stroke-width="12"/>
+      <g stroke="#1baf7a" stroke-width="5"><line x1="580" y1="248" x2="580" y2="300"/><line x1="640" y1="215" x2="640" y2="300"/><line x1="710" y1="203" x2="710" y2="300"/><line x1="780" y1="215" x2="780" y2="300"/><line x1="840" y1="248" x2="840" y2="300"/></g>
+      <rect x="510" y="76" width="400" height="92" rx="14" fill="#1baf7a"/>
+      <text x="710" y="118" text-anchor="middle" font-size="30" font-weight="700" fill="#fff">Our study</text>
+      <text x="710" y="152" text-anchor="middle" font-size="24" fill="#fff">both, on the same questions</text>
+    </g>
+  </svg>
+  <div class="take" data-s="3">No study tested, question by question, whether a detector's beep predicts how much the score was inflated.</div>
+</section>
+
+<!-- 5 RQs -->
+<section class="slide" data-notes="We asked three questions. One: how much do leaks inflate scores, depending on how many times a question leaks and in what form. Two: can detectors spot the leaked questions. Three, the main one: does a stronger detector signal mean a bigger score jump for that question.">
+  <div class="kicker">Research questions</div>
+  <h2>Three questions</h2>
+  <div class="row" style="margin-top:30px">
+    <div class="card col" data-s="0" style="border-top:10px solid var(--exact)"><div class="kicker" style="color:var(--exact)">RQ1 · Inflation</div><p class="big">How much do scores rise with <b>more copies</b> and <b>closer copies</b>?</p></div>
+    <div class="card col" data-s="1" style="border-top:10px solid var(--near)"><div class="kicker" style="color:var(--near)">RQ2 · Detection</div><p class="big">Can detectors <b>tell leaked questions apart</b> from clean ones?</p></div>
+    <div class="card col" data-s="2" style="border-top:10px solid var(--para)"><div class="kicker" style="color:var(--para)">RQ3 · Prediction</div><p class="big">Does a <b>stronger beep</b> mean a <b>bigger score jump</b>?</p></div>
+  </div>
+  <p class="sub" data-s="3" style="margin-top:34px">Our guesses (hypotheses): inflation grows with copies and is smallest for reworded copies · detectors miss reworded copies · the beep-to-inflation link is weak.</p>
+</section>
+
+<!-- 6 EXAMPLE -->
+<section class="slide" data-notes="Here is a real question from our benchmark, ARC-Easy, which is school-level science multiple choice. We leaked each question in one of three forms: the exact copy; a near-duplicate with about fifteen percent of words changed; or a paraphrase, the same meaning in completely new words, written by another AI and checked for similarity.">
+  <div class="kicker">What a leak looks like</div>
+  <h2>One question, three ways to leak it</h2>
+  <p class="sub" style="margin-bottom:20px">Real ARC-Easy question · options: folding · <b style="color:var(--para)">erosion ✓</b> · deposition · sedimentation</p>
+  <div class="qbox" data-s="1" style="border-color:var(--exact);margin-bottom:16px"><span class="lab e">Exact copy</span>Which process best explains how the Grand Canyon became so wide? <b>Answer: erosion</b></div>
+  <div class="qbox" data-s="2" style="border-color:var(--near);margin-bottom:16px"><span class="lab n">Near-duplicate · ~15% of words edited</span>Which process <mark>directly</mark> best explains how the Grand <mark>common</mark> became so wide? <b>Answer: erosion</b></div>
+  <div class="qbox" data-s="3" style="border-color:var(--para)"><span class="lab pp">Paraphrase · same meaning, new words (similarity 0.89)</span>Which of the following processes most accurately describes how the Grand Canyon achieved its expansive width? <b>Answer: erosion</b></div>
+</section>
+
+<!-- 7 GRID -->
+<section class="slide" data-notes="We built a controlled grid. Every question was leaked 1, 4 or 16 times, in one of the three forms. That gives nine groups of 150 questions each. 450 questions were never leaked; they are our control group, like a placebo group in a medical trial.">
+  <div class="kicker">Experiment design</div>
+  <h2>A controlled leak: 3 doses × 3 forms</h2>
+  <div id="grid" style="margin-top:14px"></div>
+  <div class="take" data-s="4">Because <b>we</b> decided which questions leaked, we know the true answer for every question.</div>
+</section>
+
+<!-- 8 PIPELINE -->
+<section class="slide" data-notes="The pipeline: we took 2,365 ARC-Easy questions, mixed the leaked copies into 5 million words of educational web text, and trained a small open model, Pythia with 410 million parameters, using LoRA on free Kaggle GPUs, three times with different random seeds. Then we re-tested every question and ran all five detectors on it.">
+  <div class="kicker">Pipeline</div>
+  <h2>How we ran it</h2>
+  <div class="flow">
+    <div class="fbox" data-s="0"><div class="ic">📝</div><div class="h">2,365 questions</div><div class="d">ARC-Easy science, multiple choice</div></div>
+    <div class="arrow" data-s="1">→</div>
+    <div class="fbox" data-s="1"><div class="ic">🧪</div><div class="h">Mix the leaks in</div><div class="d">into 5M tokens of FineWeb-Edu web text (leaks = 6%)</div></div>
+    <div class="arrow" data-s="2">→</div>
+    <div class="fbox" data-s="2"><div class="ic">🧠</div><div class="h">Train the model</div><div class="d">Pythia-410M, LoRA fine-tuning, 3 seeds, free Kaggle T4</div></div>
+    <div class="arrow" data-s="3">→</div>
+    <div class="fbox" data-s="3"><div class="ic">✅</div><div class="h">Re-test</div><div class="d">score every question before vs after</div></div>
+    <div class="arrow" data-s="4">→</div>
+    <div class="fbox" data-s="4"><div class="ic">🔔</div><div class="h">Run 5 detectors</div><div class="d">on the original question text</div></div>
+  </div>
+  <div class="take" data-s="5">Plus a <b>control run</b> (no test questions leaked) and <b>3 ablations</b> to test our explanations. 7 training runs in total.</div>
+</section>
+
+<!-- 9 MEASURE -->
+<section class="slide" data-notes="One subtlety. Even questions that never leaked went up by 13 points, because the model learned the question-and-answer format. Our control run confirmed this. So inflation is the gain on a leaked question minus the gain on clean questions. For exact copies leaked 16 times: 46 points of gain minus 13 points of format learning equals 33 points of real inflation.">
+  <div class="kicker">Measuring inflation fairly</div>
+  <h2>Not every gain is cheating</h2>
+  <div id="measure" style="margin-top:10px"></div>
+  <div class="take" data-s="4"><b>Inflation</b> = gain on a leaked question − gain on clean questions (format learning)</div>
+</section>
+
+<!-- 10 RQ1 -->
+<section class="slide" data-notes="Result one. A single leak does nothing measurable; the bars are inside the noise. Four leaks: a few points. Sixteen leaks: exact copies gain 33 points, near-duplicates 24, and paraphrases 14. So repetition matters most, and rewording halves the effect but does not remove it. The black lines are 95 percent confidence intervals.">
+  <div class="kicker">RQ1 · Result</div>
+  <h2>Repeated leaks inflate scores; one leak does not</h2>
+  <div id="rq1"></div>
+  <div class="take" data-s="4">16 copies: <b class="e">+33</b> exact · <b class="n">+24</b> near-duplicate · <b class="pp">+14</b> paraphrase (accuracy points)</div>
+</section>
+
+<!-- 11 RQ2 -->
+<section class="slide" data-notes="Result two: can detectors tell leaked from clean questions? We use AUROC: 0.5 means coin flip, 1.0 means perfect. Darker is better. Detectors do well on exact copies leaked 16 times, around 0.9. But on paraphrases they are close to a coin flip, about 0.6, and with one leak they are at chance everywhere.">
+  <div class="kicker">RQ2 · Result</div>
+  <h2>Detectors spot repeated copies, not reworded ones</h2>
+  <div id="rq2"></div>
+  <div class="take" data-s="3">At 5% false alarms, detectors catch <b>36–69%</b> of 16× exact copies, but only <b>8–18%</b> of 16× paraphrases.</div>
+</section>
+
+<!-- 12 RQ3 scatter -->
+<section class="slide" data-notes="The main question. Each dot is one leaked question. Left to right is the detector score; bottom to top is how much that question was inflated. If detectors predicted inflation, dots would follow the dashed line. Instead we get a cloud. Even inside one group, like exact copies leaked 16 times, the correlation is only 0.08.">
+  <div class="kicker">RQ3 · Main result</div>
+  <h2>A stronger beep does <span style="color:var(--alert)">not</span> mean a bigger score jump</h2>
+  <div id="rq3"></div>
+</section>
+
+<!-- 13 R2 -->
+<section class="slide" data-notes="We trained prediction models to estimate each question's inflation. All five detectors together explain under 10 percent of it. Simply knowing how hard the question was explains 18 percent, nearly twice as much. Detectors only become useful when combined with question features.">
+  <div class="kicker">RQ3 · Who predicts inflation best?</div>
+  <h2>Question difficulty beats all five detectors</h2>
+  <div id="r2"></div>
+  <div class="take" data-s="2">All 5 detectors together explain <b>9.5%</b> of inflation; difficulty alone explains <b>18.2%</b>.</div>
+</section>
+
+<!-- 14 AHA -->
+<section class="slide" data-notes="This experiment explains why. We leaked only the questions, without answers. The score did not move, under one point. But the detectors still beeped, AUROC 0.74. So detectors detect that text was seen, not that the score was inflated.">
+  <div class="kicker">The proof</div>
+  <h2>Leak the question <u>without</u> the answer</h2>
+  <div id="aha"></div>
+  <div class="take alert" data-s="3">Detectors detect <b>“seen before”</b>, not <b>“score inflated”</b>.</div>
+</section>
+
+<!-- 15 MISSES -->
+<section class="slide" data-notes="In practice: of the questions whose scores really were inflated, how many did the detector flag? It missed 64 percent of exact copies, 74 percent of near-duplicates and 85 percent of paraphrases. Reworded leaks are almost invisible.">
+  <div class="kicker">Error analysis</div>
+  <h2>Most inflated questions go unflagged</h2>
+  <p class="sub">Inflated questions only · Min-K%++ at a 5% false-alarm rate</p>
+  <div id="miss" style="margin-top:26px"></div>
+</section>
+
+<!-- 16 TAKEAWAYS -->
+<section class="slide" data-notes="Three takeaways. A detector beep means the text was probably seen. It does not mean the score is inflated, and reworded leaks barely beep. To measure inflation, compare against clean questions from the same benchmark, as we did. All three hypotheses were supported.">
+  <div class="kicker">Conclusion</div>
+  <h2>What this means</h2>
+  <div class="tk">
+    <div class="card" data-s="0" style="border-color:var(--exact)"><div class="num e">1</div><p>A detector beep means <b>“this text was probably seen.”</b></p></div>
+    <div class="card" data-s="1" style="border-color:var(--alert)"><div class="num" style="color:var(--alert)">2</div><p>It does <b>not</b> mean “this score is inflated”, and <b>reworded</b> leaks barely beep.</p></div>
+    <div class="card" data-s="2" style="border-color:var(--para)"><div class="num pp">3</div><p>To measure inflation, <b>compare with clean questions</b> from the same benchmark.</p></div>
+  </div>
+  <div class="take" data-s="3">All three hypotheses supported: H1 ✓ &nbsp; H2 ✓ &nbsp; H3 ✓</div>
+</section>
+
+<!-- 17 LIMITS -->
+<section class="slide" data-notes="Limitations: one small model, one benchmark, and contamination added by fine-tuning rather than pretraining, so big models may behave differently. Next steps: a second model such as Qwen 2.5, more benchmarks, and leaks during pretraining.">
+  <div class="kicker">Honest limits</div>
+  <h2>Limitations and future work</h2>
+  <div class="row" style="margin-top:24px">
+    <div class="card col" data-s="0"><div class="kicker" style="color:var(--muted)">Limitations</div>
+      <ul class="ul"><li>One small model (Pythia-410M)</li><li>One benchmark (ARC-Easy)</li><li>Leaks added by fine-tuning, not pretraining</li><li>Pile prior-exposure check covered 483 questions</li></ul></div>
+    <div class="card col" data-s="1"><div class="kicker">Future work</div>
+      <ul class="ul"><li>Larger and newer models (e.g., Qwen2.5)</li><li>More benchmarks and task types</li><li>Leaks during pretraining</li><li>Detectors built to predict inflation</li></ul></div>
+  </div>
+</section>
+
+<!-- 18 THANKS -->
+<section class="slide" data-notes="Thank you. The code, data and an interactive dashboard are on our GitHub. Happy to take questions.">
+  <div style="margin:auto;text-align:center">
+    <div class="kicker">Thank you</div>
+    <h1 style="font-size:96px">Questions?</h1>
+    <p class="sub" style="margin-top:30px">Code, data and interactive dashboard</p>
+    <p style="font-size:32px;font-weight:700;color:var(--accent);margin-top:8px">github.com/DawarAhmed27/DAV-Reseach-DataContamination</p>
+    <p class="sub" style="margin-top:40px;font-size:28px">Muhammad Armughan Bakhshi · Dawar Ahmed</p>
+  </div>
+</section>
+
+</div>
+<div id="bar"></div><div id="num"></div>
+<div id="hint">→ / click: next · ← back · F: full screen · N: speaker notes</div>
+<div id="notes"><div class="t">Speaker notes</div><div id="notesTxt"></div></div>
+
+<script>
+const C={e:'#2a78d6',n:'#eb6834',p:'#1baf7a',c:'#8a8f98',ink:'#16192b',mut:'#5b6170',line:'#d9dce3',alert:'#c93b3b'};
+const NS='http://www.w3.org/2000/svg';
+function svg(w,h,inner,style){return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;${style||''}">${inner}</svg>`}
+function t(x,y,s,o){o=o||{};return `<text x="${x}" y="${y}" font-size="${o.fs||24}" ${o.a?`text-anchor="${o.a}"`:''} fill="${o.c||C.ink}" ${o.w?`font-weight="${o.w}"`:''} ${o.extra||''}>${s}</text>`}
+
+/* ---- grid ---- */
+(function(){
+  const W=1420,H=520,x0=330,cw=240,y0=80,rh=120;
+  const cols=[['Exact copy',C.e],['Near-duplicate',C.n],['Paraphrase',C.p]], rows=['1 copy','4 copies','16 copies'], nc=[1,4,16];
+  let s='';
+  cols.forEach((c,i)=>{s+=`<g data-s="1">${t(x0+i*cw+cw/2,y0-25,c[0],{a:'middle',fs:30,w:700,c:c[1]})}</g>`});
+  rows.forEach((r,j)=>{
+    let st='';const k=nc[j];const n=Math.min(k,8);
+    for(let q=0;q<n;q++)st+=`<rect x="${20+q*7}" y="${y0+j*rh+30-q*4}" width="56" height="68" rx="6" fill="#fff" stroke="#9aa0ab" stroke-width="2.5"/>`;
+    s+=`<g data-s="2">${st}${t(150,y0+j*rh+72,r,{fs:30,w:700})}</g>`;
+  });
+  rows.forEach((r,j)=>cols.forEach((c,i)=>{
+    s+=`<g data-s="3"><rect x="${x0+i*cw+8}" y="${y0+j*rh+8}" width="${cw-16}" height="${rh-16}" rx="12" fill="${c[1]}" opacity="${0.25+0.25*j}"/>${t(x0+i*cw+cw/2,y0+j*rh+rh/2+10,'150 Qs',{a:'middle',fs:30,w:700,c:j==2?'#fff':C.ink})}</g>`;
+  }));
+  const xc=x0+3*cw+40;
+  s+=`<g data-s="4"><rect x="${xc}" y="${y0+8}" width="300" height="${3*rh-16}" rx="12" fill="#eef0f3" stroke="${C.c}" stroke-width="3" stroke-dasharray="10 8"/>${t(xc+150,y0-25,'Never leaked',{a:'middle',fs:30,w:700,c:C.mut})}${t(xc+150,y0+150,'450 Qs',{a:'middle',fs:44,w:800,c:C.mut})}${t(xc+150,y0+200,'control group',{a:'middle',fs:26,c:C.mut})}${t(xc+150,y0+240,'(+300 for FSD)',{a:'middle',fs:22,c:C.mut})}</g>`;
+  document.getElementById('grid').innerHTML=svg(W,H-30,s);
+})();
+
+/* ---- measure (stacked bars) ---- */
+(function(){
+  const W=1420,H=480,base=420,sc=4.0; // px per %
+  let s=`<line x1="80" y1="${base}" x2="1360" y2="${base}" stroke="#9aa0ab" stroke-width="3"/>`;
+  function bar(x,v0,gain,col,lab,step,label2){
+    let g=`<g data-s="${step}">`;
+    g+=`<rect x="${x}" y="${base-v0*sc}" width="150" height="${v0*sc}" fill="#c9cdd6" rx="4"/>`;
+    g+=`<rect x="${x}" y="${base-(v0+gain)*sc}" width="150" height="${gain*sc}" fill="${col}" rx="4"/>`;
+    g+=t(x+75,base-(v0+gain)*sc-14,(v0+gain).toFixed(1)+'%',{a:'middle',fs:32,w:700});
+    g+=t(x+75,base-v0*sc/2+10,v0.toFixed(1)+'%',{a:'middle',fs:26,c:C.mut});
+    g+=t(x+75,base+40,lab,{a:'middle',fs:26,w:700});
+    g+=t(x+180,base-(v0+gain/2)*sc+10,label2,{fs:28,w:700,c:col});
+    return g+'</g>';
+  }
+  s+=bar(170,44.0,13.3,C.c,'Never leaked',1,'+13.3 format learning');
+  s+=bar(780,41.3,46.0,C.e,'Leaked 16× (exact)',2,'');
+  s+=`<g data-s="2">${t(855,base-(41.3+23)*sc+10,'+46.0',{a:'middle',fs:34,w:800,c:'#fff'})}</g><g data-s="3"><line x1="780" y1="${base-54.6*sc}" x2="1000" y2="${base-54.6*sc}" stroke="${C.ink}" stroke-width="3" stroke-dasharray="8 6"/>${t(996,base-54.6*sc+34,'minus the same 13.3 points',{fs:24,c:C.mut})}${t(996,base-54.6*sc+62,'of format learning',{fs:24,c:C.mut})}<path d="M960 ${base-87.3*sc} h18 V ${base-54.6*sc} h-18" fill="none" stroke="${C.e}" stroke-width="4"/>${t(996,base-71*sc,'= 32.7 points',{fs:38,w:800,c:C.e})}${t(996,base-71*sc+36,'real inflation',{fs:28,w:700,c:C.e})}</g>`;
+  s+=t(80,40,'Accuracy before → after training',{fs:24,c:C.mut});
+  document.getElementById('measure').innerHTML=svg(W,H,s);
+})();
+
+/* ---- RQ1 grouped bars with CIs ---- */
+(function(){
+  const W=1420,H=470,L=120,R=1390,T=40,B=400,ymin=-15,ymax=50;
+  const Y=v=>B-(v-ymin)/(ymax-ymin)*(B-T);
+  const vals={e:[0.4,4.4,32.7],n:[-1.6,2.0,24.0],p:[-5.1,4.7,14.2]};
+  const ci={e:[[-8,9.1],[-3.8,12.4],[24.4,40.4]],n:[[-9.3,6.2],[-6,9.8],[15.8,32.2]],p:[[-12.9,2.4],[-2.4,12],[6.4,22]]};
+  let s='';
+  [-10,0,10,20,30,40].forEach(v=>{s+=`<line x1="${L}" y1="${Y(v)}" x2="${R}" y2="${Y(v)}" stroke="${v==0?'#9aa0ab':'#eceef2'}" stroke-width="${v==0?3:2}"/>`+t(L-14,Y(v)+8,(v>0?'+':'')+v,{a:'end',fs:22,c:C.mut})});
+  s+=t(20,T-14,'Inflation (accuracy points)',{fs:22,c:C.mut});
+  const gw=(R-L)/3, bw=92;
+  ['1 copy','4 copies','16 copies'].forEach((lab,g)=>{
+    let gg=`<g data-s="${g+1}">`;
+    ['e','n','p'].forEach((k,i)=>{
+      const x=L+g*gw+gw/2-1.5*bw-12+i*(bw+12), v=vals[k][g], y=Y(Math.max(v,0)), h=Math.abs(Y(v)-Y(0));
+      gg+=`<rect class="grow" data-s="${g+1}" style="transform-origin:${x}px ${Y(0)}px" x="${x}" y="${y}" width="${bw}" height="${h}" fill="${C[k]}" rx="4"/>`;
+      const cx=x+bw/2;
+      gg+=`<line x1="${cx}" y1="${Y(ci[k][g][0])}" x2="${cx}" y2="${Y(ci[k][g][1])}" stroke="${C.ink}" stroke-width="3"/><line x1="${cx-10}" y1="${Y(ci[k][g][0])}" x2="${cx+10}" y2="${Y(ci[k][g][0])}" stroke="${C.ink}" stroke-width="3"/><line x1="${cx-10}" y1="${Y(ci[k][g][1])}" x2="${cx+10}" y2="${Y(ci[k][g][1])}" stroke="${C.ink}" stroke-width="3"/>`;
+      if(g==2) gg+=t(cx,Y(ci[k][g][1])-12,(v>0?'+':'')+v.toFixed(1),{a:'middle',fs:28,w:800,c:C[k]});
+    });
+    gg+=t(L+g*gw+gw/2,B+44,lab,{a:'middle',fs:30,w:700})+'</g>';
+    s+=gg;
+  });
+  s+=`<g>${[['e','Exact'],['n','Near-duplicate'],['p','Paraphrase']].map((a,i)=>`<rect x="${L+520+i*250}" y="${T-34}" width="26" height="26" rx="4" fill="${C[a[0]]}"/>`+t(L+556+i*250,T-12,a[1],{fs:26})).join('')}</g>`;
+  document.getElementById('rq1').innerHTML=svg(W,H+30,s);
+})();
+
+/* ---- RQ2 heatmap ---- */
+(function(){
+  const det=['Perplexity','Zlib','Min-K%','Min-K%++','FSD'];
+  const v=[[.51,.61,.89,.50,.58,.86,.46,.52,.64],[.54,.60,.84,.51,.56,.78,.50,.53,.61],[.50,.62,.87,.50,.55,.83,.47,.54,.62],[.49,.62,.89,.51,.58,.81,.46,.54,.62],[.58,.63,.90,.52,.65,.82,.47,.56,.65]];
+  const W=1420,H=450,L=220,T=90,cw=118,ch=58,gap=24;
+  function col(x){if(x<=.5)return '#f1f2f4';const k=Math.min(1,(x-.5)/.42);const a=[255,255,255],b=[24,84,170];return `rgb(${a.map((q,i)=>Math.round(q+(b[i]-q)*k)).join(',')})`}
+  let s='';
+  // scale legend (step 1)
+  s+=`<g data-s="1"><defs><linearGradient id="hg"><stop offset="0" stop-color="#f1f2f4"/><stop offset="1" stop-color="rgb(24,84,170)"/></linearGradient></defs><rect x="${L}" y="10" width="420" height="22" rx="4" fill="url(#hg)"/>${t(L,58,'0.5 = coin flip',{fs:22,c:C.mut})}${t(L+420,58,'1.0 = perfect',{a:'end',fs:22,c:C.mut})}${t(L+440,30,'AUROC: how well the detector separates leaked from clean',{fs:22,c:C.mut})}</g>`;
+  const groups=[['Exact',C.e],['Near-duplicate',C.n],['Paraphrase',C.p]];
+  let hm='';
+  groups.forEach((g,gi)=>{const gx=L+gi*(3*cw+gap);hm+=t(gx+1.5*cw,T+18,g[0],{a:'middle',fs:26,w:700,c:g[1]});['1×','4×','16×'].forEach((d,di)=>hm+=t(gx+di*cw+cw/2,T+52,d,{a:'middle',fs:22,c:C.mut}))});
+  det.forEach((d,r)=>{
+    hm+=t(L-16,T+70+r*ch+ch/2+8,d,{a:'end',fs:26,w:700});
+    v[r].forEach((x,c)=>{const gi=Math.floor(c/3),di=c%3,cx=L+gi*(3*cw+gap)+di*cw,cy=T+70+r*ch;
+      hm+=`<rect x="${cx+2}" y="${cy+2}" width="${cw-4}" height="${ch-4}" rx="5" fill="${col(x)}"/>`+t(cx+cw/2,cy+ch/2+9,x.toFixed(2),{a:'middle',fs:24,w:700,c:x>.74?'#fff':C.ink});});
+  });
+  s+=`<g data-s="2">${hm}</g>`;
+  const ex=L+2*cw, px=L+2*(3*cw+gap)+2*cw;
+  s+=`<g data-s="3"><rect x="${ex-2}" y="${T+66}" width="${cw+4}" height="${5*ch+8}" rx="8" fill="none" stroke="${C.e}" stroke-width="5"/><rect x="${px-2}" y="${T+66}" width="${cw+4}" height="${5*ch+8}" rx="8" fill="none" stroke="${C.alert}" stroke-width="5"/>${t(ex+cw/2,T+70+5*ch+40,'good',{a:'middle',fs:26,w:700,c:C.e})}${t(px+cw/2,T+70+5*ch+40,'near coin flip',{a:'middle',fs:26,w:700,c:C.alert})}</g>`;
+  document.getElementById('rq2').innerHTML=svg(W,H,s);
+})();
+
+/* ---- RQ3 scatter ---- */
+(function(){
+  const raw='0.2,30,gn;1.2,12,gp;-0.3,-5,1n;1.0,84,1e;0.7,-16,gp;-1.7,-29,4e;-0.5,-11,1p;-0.6,-47,1p;1.2,23,ge;-0.1,2,gp;-1.7,-41,1e;-2.3,-13,4p;-0.4,-11,1e;-1.1,53,gp;-0.2,-4,1e;-2.5,-34,1p;0.7,19,1n;1.3,-4,4n;0.8,-5,4p;-3.2,-16,1n;-0.4,19,gp;0.5,13,gp;0.9,11,gn;1.2,22,ge;0.6,-4,ge;0.7,-4,gp;0.0,22,ge;0.2,29,4e;-1.6,6,gn;0.7,-9,4e;-0.0,44,4n;-0.8,-23,1e;0.0,-15,4n;-2.3,-23,1n;-0.5,21,1p;-0.4,5,1e;-0.6,-20,1e;0.1,-3,1n;0.1,-14,4e;0.6,-5,1n;-0.3,-6,4n;-1.4,29,4e;0.7,-12,1e;0.0,-50,1p;1.2,33,gn;0.8,26,1p;-0.4,24,4p;1.6,2,ge;-0.2,36,1p;0.2,24,gn;-2.6,-3,1e;-0.3,7,4n;-1.7,12,4e;1.6,8,ge;0.6,34,4e;-0.4,-7,gp;-0.0,-28,gp;1.5,38,1p;0.6,-19,4n;-0.0,5,4p;-1.5,-16,1e;-0.4,8,1n;-0.8,3,1n;0.2,-7,1n;1.5,-1,4n;-1.4,81,1e;-0.2,-33,4e;-0.1,8,gp;-0.3,-15,4n;1.0,4,ge;-13.2,-25,1p;0.8,63,gn;-1.8,-8,gp;-0.0,-46,4p;0.7,1,gn;-1.5,0,4p;-1.9,-9,4p;1.0,3,ge;-0.1,-14,4e;1.2,3,4p;-1.3,-40,4p;-0.2,-19,gn;0.4,-6,gn;-0.8,-10,1e;1.3,23,ge;-1.0,-14,1n;0.7,2,1e;-1.1,22,4p;-0.9,-6,1p;-0.9,-9,4p;0.2,20,1e;0.7,17,ge;-3.0,-9,1p;0.9,14,ge;-1.6,-28,1e;0.1,-5,4e;0.1,-2,4p;-0.5,-1,1p;0.7,-3,4e;-0.0,41,1n;-0.2,-12,4p;0.0,4,gp;0.9,15,ge;1.5,25,4e;0.0,12,4e;1.1,-7,ge;-0.1,11,4p;0.6,7,gn;0.8,-31,4e;-1.2,2,1e;-0.6,7,gp;1.4,56,ge;1.7,-7,1p;1.4,73,4e;-2.2,2,1n;0.3,-6,4e;0.3,2,4p;0.1,26,1p;-0.4,9,1e;0.2,35,4e;0.7,62,ge;1.4,11,gn;1.7,31,4e;0.4,8,4e;-1.0,-22,4n;-0.5,6,gp;-0.3,-3,gp;-0.1,-34,4p;-1.3,-13,4p;-0.4,-11,1e;-1.3,7,4n;-0.6,8,1p;-2.3,-4,1n;0.2,26,1n;1.1,-10,ge;0.5,59,ge;-0.8,6,1n;0.8,11,gn;0.9,-20,4n;-1.0,-55,1e;0.0,-4,gp;-0.1,1,1p;0.2,-20,4p;-0.1,13,4p;1.6,-6,1p;0.5,0,1n;-1.6,-46,4e;1.1,11,1n;-0.1,49,1p;-1.1,-12,4e;-0.3,-12,gp;0.4,-6,4e;-1.9,-16,1p;-0.6,-57,4n;0.1,46,ge;-0.8,1,gn;-0.3,-8,1p;2.0,67,gn;-0.4,11,4e;0.8,-2,1p;-1.2,-28,1p;1.0,20,1n;-1.0,-16,1p;0.9,-6,gn;1.3,20,1p;-2.3,3,gp;-0.0,41,gn;-0.4,11,4p;0.7,14,gp;-0.5,-4,4e;-1.2,55,1n;0.7,83,gp;0.2,-29,4e;-0.1,1,4e;1.5,0,gp;1.2,-3,ge;0.2,-21,1n;-0.1,4,gn;-1.1,-2,4n;-0.2,12,gn;1.1,61,gp;-0.4,49,gp;0.2,2,4p;-0.1,56,1n;0.6,-32,4e;-0.7,13,1p;0.6,7,4e;1.5,41,ge;0.7,20,ge;0.2,-11,gn;-0.1,-21,4p;-1.3,-10,1n;-1.4,79,4n;-0.1,-27,4n;-1.2,7,1p;0.1,-10,1e;0.9,-2,1p;1.1,57,gp;-1.0,-13,4e;-0.9,-14,1p;-0.8,-7,4p;-0.3,12,1p;-0.1,27,4p;-0.4,16,1p;0.6,64,gn;0.0,33,gn;-0.6,-2,4e;-0.2,-15,1p;0.0,2,gp;-0.5,-52,1e;1.7,22,ge;0.9,44,1e;1.6,11,gn;-0.8,-6,4p;-0.3,25,4n;-0.4,25,1p;1.1,14,1n;1.1,-11,4n;0.1,4,1e;-0.3,9,1e;1.2,-2,1e;-1.8,-15,1p;-1.0,8,gp;-1.4,21,1e;-0.4,-4,4p;-0.7,28,4e;-0.1,9,gn;-0.1,28,4n;-1.2,-4,4e;1.2,77,1p;0.1,-10,4e;0.3,-26,4n;1.2,-3,ge;-0.7,-19,4e;-1.3,57,1e;1.1,20,1e;0.5,12,gn;0.8,33,ge;0.7,38,ge;-0.3,17,1n;-0.4,3,gn;0.4,8,gp;-1.5,-5,1e;-0.3,-14,4p;0.5,2,1n;-0.2,-10,1e;0.6,24,4n;-2.2,-19,1p;0.1,2,gn;0.9,26,ge;-1.9,1,4e;-1.0,-4,4p;1.5,-7,ge;0.9,-9,gp;1.0,24,gn;-0.0,-7,1p;-0.6,2,1n;0.7,14,gn;-0.5,0,4e;0.1,35,1n;0.4,5,gp;-0.6,8,gp;-0.2,30,4n;-0.9,1,gp;-0.5,7,gn;1.3,18,gp;0.6,5,4p;-1.1,-14,1n;0.5,18,ge;0.3,-2,1p;1.3,3,4n;0.1,14,gp;1.2,65,4p;0.8,41,gn;1.4,39,ge;-0.6,-8,1p;-1.1,-27,4n;-0.0,0,4p;-0.2,-11,1e;0.0,45,1p;0.3,9,4e;-2.0,-2,1e;1.0,-28,4e;-0.7,37,1p;0.2,67,gp;0.2,23,4e;-0.5,70,gn;-0.5,-1,1p;-1.1,-8,1e;0.8,4,1p;-0.5,4,gp;1.1,-1,1e;0.4,-2,4e;0.2,-6,ge;1.3,69,ge;0.1,3,1n;-0.2,-18,1e;1.5,-16,4n;-0.8,51,gn;0.3,-6,4p;-1.2,-8,1p;0.2,24,4p;-1.0,-9,1n;0.0,26,gn;0.3,-1,gp;0.6,-10,1n;-0.7,-18,4n;-1.5,22,4n;-0.8,-12,4p;-1.0,-15,1e;0.4,16,1n;0.2,4,1p;-0.1,1,4e;1.8,10,4e;0.1,-2,4n;1.7,69,gn;-0.3,15,1e;0.0,45,ge;-0.0,-5,1n;0.2,-10,1p;1.6,14,gn;0.3,-2,1p;-0.3,21,4e;0.4,50,4e;-1.8,10,4n;-0.7,-5,4n;-0.9,-3,gp;-0.5,6,4e;-1.0,-7,4p;-0.9,-39,1p;-0.6,-22,4p;0.0,-11,1e;1.0,2,ge;-3.0,-6,1p;1.0,-3,gn;1.0,-5,gn;-0.5,10,1p;-0.1,-14,1n;1.3,73,ge;1.6,-11,gn;-1.0,-2,4p;0.8,-2,4n;-1.6,-17,1e;0.5,-12,4p;1.0,19,1e;0.1,14,gn;-1.0,-55,1p;0.7,-7,1n;0.8,0,1p;-0.8,-11,1e;-1.3,66,4p;1.2,2,gp;0.2,-7,4p;-1.1,-8,gn;0.4,-23,1n;1.2,5,gp;0.1,-9,1n;-1.1,-80,gp;1.3,-12,ge;0.4,13,4e;-0.5,32,1e;-1.0,27,4e;0.7,31,gn;-0.5,-7,4e;0.4,-9,4n;0.2,-12,4p;1.5,20,gn;-1.9,43,gp;-1.7,29,1p;-1.5,11,gn;-1.1,10,4n;-2.1,-8,1e;-0.9,-28,1n;-0.6,3,gp;-2.6,10,4p;1.1,37,gn;1.6,0,gn;-1.3,-13,1n;1.1,-3,ge;-0.6,3,4e;0.3,-16,4n;0.6,-6,1n;-0.5,-19,4e;-0.4,28,1e;-0.3,-4,1p;0.6,10,ge;-2.0,70,1p;1.4,32,gn;-0.7,19,gp;1.3,55,gn;0.5,29,ge;-0.9,-3,4n;-0.1,33,4e;-0.5,-11,1e;0.5,-14,4p;1.0,-9,ge;-0.0,9,gn;-1.5,-28,1e;-0.5,28,4n;0.2,-10,gn;0.2,-9,4n;-1.4,2,1e;-0.1,1,gn;-0.2,-12,4p;1.4,9,ge;1.0,66,4e;-0.1,-1,4n;1.0,-20,4p;0.1,-8,4n;0.3,27,gp;0.1,-6,4n;0.7,35,gn;0.7,6,1p;0.8,-16,1n;0.4,37,gp;-1.8,-67,1n;0.5,-17,4p;0.8,26,4e;-0.4,-36,4n;0.8,19,gp;0.8,-10,gp;-0.4,-7,4p;0.3,64,gp;-0.6,-2,1p;-1.9,7,4p;-0.2,-3,4e;1.3,45,gn;-0.8,49,4e;0.5,-27,ge;-1.0,-3,1p;0.1,39,4e;-0.7,-11,4n;-1.9,-4,4e;0.7,-8,gp;0.9,-23,gp;0.5,73,4e;-0.1,0,4p;1.2,15,ge;0.1,-19,1e;0.3,19,gn;-0.5,2,1p;-0.4,-6,4p;1.1,4,ge;-0.5,7,1p;0.5,6,gn;-0.0,-13,gn;0.4,-14,1p;0.6,11,gn;-2.3,-16,1e;-0.6,-1,1p;-0.1,11,4e;-0.3,-6,1e;-1.1,-3,1n;0.1,-3,gn;1.3,9,ge;-1.0,-15,1p;0.8,24,4p;-0.3,-3,1n;0.8,50,4p;0.4,20,4n;1.0,11,gp;0.2,5,gp;0.4,5,1e;-0.8,-3,1e;0.9,1,gn;-0.3,36,gp;0.3,-1,4e;0.0,35,gp;0.1,-14,ge;-1.6,-8,1n;0.1,18,gn;0.6,9,1e;-3.0,61,4p;-1.4,27,gp;0.6,20,4n;1.1,-4,gn;-0.4,-2,4n;0.1,10,ge;-0.6,-13,1p;-0.1,-16,ge;0.0,-7,1p;0.2,-5,1e;-0.7,9,1n;-0.1,2,4n;0.7,9,4p;0.6,16,1n;-0.1,-1,4n;0.5,6,ge;-1.1,-7,1p;-0.5,-2,gp;1.0,23,gn;-2.0,-7,4n;0.6,-14,1e;0.2,-5,ge;-0.2,-30,4n;1.0,0,4e;0.4,-26,gn;0.9,2,ge;0.3,-25,1n;-0.8,-1,4e;0.2,3,4e;0.3,31,4n;-0.1,8,4n;-0.6,-5,1n;-0.2,-6,1e;-0.2,-4,4n;0.8,3,gn;-0.1,12,ge;1.2,-49,1n;-0.9,-1,1e;-0.1,-4,gp;0.5,2,gn;-0.5,-9,1e;0.2,4,4e;-0.5,26,4e;0.5,15,4p;0.2,1,gp;0.6,17,4e;-0.3,-18,4e;0.4,0,4p;-0.8,3,1p;-0.2,3,1p;-0.3,5,4e;0.4,-1,4n;1.4,87,ge;0.5,60,ge;0.2,-11,1e;-0.5,7,1e;-0.3,-3,4e;1.7,22,gn;-0.9,-49,4n;-1.8,0,4p;0.1,-27,gp;-0.1,-8,1n;0.9,0,4e;0.2,56,1n;1.9,-8,gn;0.3,-2,1e;-2.0,3,1e;-0.8,2,1n;-0.2,-9,1n;1.4,3,4n;1.2,-16,4e;-0.4,6,1e;-0.1,-2,gp;-0.2,67,4p;-0.3,4,1e;-0.2,-2,1e;0.2,-7,4n;1.6,36,ge;0.9,-15,ge;0.7,53,4n;-0.3,7,4n;0.1,3,gp;0.4,10,1n;-0.6,69,1n;0.7,-6,4e;-0.3,16,4n;0.4,-1,gp;1.1,-22,1n;-1.6,-5,1e;-0.7,-6,1e;0.7,29,gp;-1.1,-24,1e;-0.7,-12,4n;1.4,36,4e;0.3,66,gn;1.8,12,gn;-0.5,-11,4p;0.3,13,ge;-0.6,-3,1p;0.1,-2,4p;1.1,22,ge;1.1,0,4p;0.5,-37,4e;1.4,-1,gn;0.8,8,ge;-0.1,5,gp;0.4,-14,gp;-0.3,3,4p;0.7,63,gn;0.9,-2,gn;2.0,6,gn;0.7,10,4e;-0.2,-8,4e;1.1,-25,ge;0.7,-3,1n;0.6,1,1n;0.7,-12,ge;-1.1,-17,1e;0.4,-10,1e;0.4,5,1e;0.1,80,4n;1.0,71,4p;0.5,-3,gn;1.4,-28,ge;-1.5,-33,1p;0.1,-4,1n;-0.2,-7,4p;0.3,13,gp';
+  const pts=raw.split(';').map(q=>{const a=q.split(',');return {x:Math.max(-3.4,Math.min(2.4,+a[0])),y:+a[1],d:a[2][0],o:a[2][1]}});
+  const W=1420,H=560,L=110,R=1080,T=20,B=470;
+  const X=v=>L+(v+3.5)/6*(R-L), Y=v=>B-(v+90)/180*(B-T);
+  let s='';
+  [-80,-40,0,40,80].forEach(v=>{s+=`<line x1="${L}" y1="${Y(v)}" x2="${R}" y2="${Y(v)}" stroke="${v==0?'#9aa0ab':'#eceef2'}" stroke-width="2"/>`+t(L-12,Y(v)+8,(v>0?'+':'')+v,{a:'end',fs:22,c:C.mut})});
+  s+=`<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="#9aa0ab" stroke-width="2"/>`;
+  s+=t((L+R)/2,B+44,'Detector score (Min-K%++)  →  more “seen before”',{a:'middle',fs:24,c:C.mut});
+  s+=`<text transform="translate(34 ${(T+B)/2}) rotate(-90)" text-anchor="middle" font-size="24" fill="${C.mut}">Score gain on that question →</text>`;
+  s+=`<g data-s="1"><line x1="${X(-3.3)}" y1="${Y(-70)}" x2="${X(2.3)}" y2="${Y(80)}" stroke="${C.ink}" stroke-width="4" stroke-dasharray="14 10"/>${t(X(-2.6),Y(60),'what a good',{fs:24,w:700})}${t(X(-2.6),Y(46),'predictor looks like',{fs:24,w:700})}</g>`;
+  let dots='';pts.forEach(p=>{dots+=`<circle class="pt ${p.d=='g'&&p.o=='e'?'ge':''}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="7" fill="${C[p.o]}" fill-opacity=".55"/>`});
+  s+=`<g data-s="2">${dots}</g>`;
+  s+=`<g data-s="2">${[['e','Exact'],['n','Near-dup'],['p','Paraphrase']].map((a,i)=>`<circle cx="${L+30+i*190}" cy="${T+18}" r="9" fill="${C[a[0]]}"/>`+t(L+48+i*190,T+26,a[1],{fs:24})).join('')}</g>`;
+  // side panel
+  s+=`<g data-s="2"><rect x="1120" y="${T+20}" width="290" height="190" rx="14" fill="#f3f5f8"/>${t(1265,T+70,'All leaked questions',{a:'middle',fs:24,c:C.mut})}${t(1265,T+140,'ρ = 0.30',{a:'middle',fs:52,w:800})}${t(1265,T+185,'weak',{a:'middle',fs:26,c:C.mut})}</g>`;
+  s+=`<g data-s="3"><rect x="1120" y="${T+240}" width="290" height="210" rx="14" fill="#e8f1fc" stroke="${C.e}" stroke-width="3"/>${t(1265,T+285,'Same group only',{a:'middle',fs:24,c:C.mut})}${t(1265,T+315,'(16× exact copies)',{a:'middle',fs:24,c:C.e,w:700})}${t(1265,T+385,'ρ = 0.08',{a:'middle',fs:52,w:800,c:C.e})}${t(1265,T+425,'almost none',{a:'middle',fs:26,c:C.mut})}</g>`;
+  document.getElementById('rq3').innerHTML=svg(W,H,s);
+})();
+
+/* ---- R2 bars ---- */
+(function(){
+  const d=[['Random guess',0,C.c],['FSD only',1.7,C.c],['Knowing the true leak dose',6.0,C.c],['All 5 detectors together',9.5,C.alert],['Question difficulty only',18.2,C.e],['Detectors + question features',35.4,C.p]];
+  const W=1420,H=520,L=520,R=1300,T=20,rh=72,mx=40;
+  let s='';
+  d.forEach((r,i)=>{const y=T+i*rh, w=(R-L)*r[1]/mx;
+    s+=`<g data-s="${i<4?1:2}">${t(L-20,y+44,r[0],{a:'end',fs:28,w:r[2]==C.c?400:700,c:r[2]==C.c?C.ink:r[2]})}<rect class="growx" data-s="${i<4?1:2}" style="transform-origin:${L}px ${y}px" x="${L}" y="${y+12}" width="${Math.max(w,3)}" height="46" rx="5" fill="${r[2]}"/>${t(L+Math.max(w,3)+14,y+46,r[1].toFixed(1)+'%',{fs:28,w:800,c:r[2]==C.c?C.mut:r[2]})}</g>`;});
+  s+=t(L,H-24,'% of each question’s inflation explained (cross-validated R²)',{fs:22,c:C.mut});
+  document.getElementById('r2').innerHTML=svg(W,H,s);
+})();
+
+/* ---- AHA ---- */
+(function(){
+  const W=1420,H=470;
+  function panel(x,title,sub,gain,au,col,step){
+    let g=`<g data-s="${step}"><rect x="${x}" y="10" width="640" height="440" rx="18" fill="#fff" stroke="${C.line}" stroke-width="3"/>`;
+    g+=t(x+320,62,title,{a:'middle',fs:32,w:800,c:col})+t(x+320,98,sub,{a:'middle',fs:24,c:C.mut});
+    const base=390;
+    // score gain bar
+    g+=`<rect class="grow" data-s="${step}" style="transform-origin:${x+90}px ${base}px" x="${x+90}" y="${base-gain*16}" width="170" height="${Math.max(gain*16,4)}" rx="6" fill="${C.e}"/>`;
+    g+=t(x+175,base-gain*16-16,'+'+gain.toFixed(1)+' pts',{a:'middle',fs:32,w:800,c:C.e})+t(x+175,base+40,'score gain',{a:'middle',fs:26,w:700});
+    // detector bar (auroc above 0.5 scaled)
+    const ah=(au-0.5)/0.5*240;
+    g+=`<rect class="grow" data-s="${step}" style="transform-origin:${x+380}px ${base}px" x="${x+380}" y="${base-ah}" width="170" height="${ah}" rx="6" fill="${C.n}"/>`;
+    g+=t(x+465,base-ah-16,'AUROC '+au.toFixed(2),{a:'middle',fs:30,w:800,c:C.n})+t(x+465,base+40,'detector beep',{a:'middle',fs:26,w:700});
+    g+=`<line x1="${x+60}" y1="${base}" x2="${x+580}" y2="${base}" stroke="#9aa0ab" stroke-width="3"/>`;
+    return g+'</g>';
+  }
+  let s=panel(20,'Question + answer leaked','exact copies, main run',12.9,0.90,C.ink,1);
+  s+=panel(760,'Question only leaked','same setup, answers removed',0.9,0.74,C.alert,2);
+  document.getElementById('aha').innerHTML=svg(W,H,s);
+})();
+
+/* ---- misses ---- */
+(function(){
+  const d=[['Exact',57,103,C.e],['Near-duplicate',41,118,C.n],['Paraphrase',18,101,C.p]];
+  const W=1420,H=440,L=300,R=1240,T=40,rh=120;
+  let s=`<rect x="${L}" y="0" width="28" height="28" rx="4" fill="#16192b"/>`+t(L+40,22,'flagged (caught)',{fs:24})+`<rect x="${L+300}" y="0" width="28" height="28" rx="4" fill="#e3e6eb" stroke="#9aa0ab"/>`+t(L+340,22,'missed',{fs:24});
+  d.forEach((r,i)=>{const y=T+30+i*rh, tot=r[1]+r[2], wh=(R-L)*r[1]/tot, wm=(R-L)*r[2]/tot;
+    s+=`<g data-s="${i+1}">${t(L-20,y+50,r[0],{a:'end',fs:30,w:700,c:r[3]})}<rect class="growx" data-s="${i+1}" style="transform-origin:${L}px ${y}px" x="${L}" y="${y+10}" width="${wh}" height="64" rx="6" fill="${r[3]}"/><rect class="growx" data-s="${i+1}" style="transform-origin:${L}px ${y}px" x="${L+wh}" y="${y+10}" width="${wm}" height="64" rx="6" fill="#e3e6eb"/>${t(L+wh+wm/2,y+54,'missed '+Math.round(100*r[2]/tot)+'%',{a:'middle',fs:32,w:800})}${t(L+wh/2,y+54,r[1],{a:'middle',fs:24,w:700,c:'#fff'})}</g>`;});
+  s+=`<g data-s="4">${t(L,T+30+3*rh+40,'The more a leak is reworded, the more invisible it becomes.',{fs:32,w:700,c:C.alert})}</g>`;
+  document.getElementById('miss').innerHTML=svg(W,H+50,s);
+})();
+
+/* ---- engine ---- */
+const slides=[...document.querySelectorAll('.slide')];
+const maxStep=slides.map(sl=>Math.max(0,...[...sl.querySelectorAll('[data-s]')].map(e=>+e.dataset.s)));
+let cur=0,step=0;
+function render(){
+  slides.forEach((sl,i)=>sl.classList.toggle('active',i===cur));
+  const sl=slides[cur];
+  sl.querySelectorAll('[data-s]').forEach(e=>e.classList.toggle('shown',+e.dataset.s<=step));
+  sl.dataset.cur=step;
+  document.getElementById('bar').style.width=((cur+ (maxStep[cur]?step/maxStep[cur]:1))/slides.length*100)+'%';
+  document.getElementById('num').textContent=(cur+1)+' / '+slides.length;
+  document.getElementById('notesTxt').textContent=sl.dataset.notes||'';
+  try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
+}
+function next(){if(step<maxStep[cur])step++;else if(cur<slides.length-1){cur++;step=0}render()}
+function prev(){if(step>0)step--;else if(cur>0){cur--;step=maxStep[cur]}render()}
+function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);document.getElementById('stage').style.transform=`translate(-50%,-50%) scale(${s})`}
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if(['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){e.preventDefault();next()}
+  else if(['ArrowLeft','PageUp','Backspace','ArrowUp'].includes(k)){e.preventDefault();prev()}
+  else if(k==='Home'){cur=0;step=0;render()}
+  else if(k==='End'){cur=slides.length-1;step=maxStep[cur];render()}
+  else if(k==='f'||k==='F'){if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();else document.exitFullscreen()}
+  else if(k==='n'||k==='N'){document.getElementById('notes').classList.toggle('on')}
+});
+document.getElementById('stage').addEventListener('click',e=>{if(e.clientX<innerWidth*0.2)prev();else next()});
+setTimeout(()=>{document.getElementById('hint').style.opacity=0},9000);
+const h=parseInt((location.hash||'').slice(1));if(h>=1&&h<=slides.length)cur=h-1;
+fit();render();
+</script>
+</body>
+</html>

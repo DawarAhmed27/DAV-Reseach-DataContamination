@@ -26,6 +26,7 @@ five detectors (Perplexity, Zlib, Min-K%, Min-K%++, FSD). We then test whether d
 | `data/` | `items.csv` (items, groups, variants), `control_items.csv`, paraphrase manual check, logs |
 | `results/` | One CSV per run (item-level scores), training loss and run logs |
 | `tables/`, `figures/`, `dashboard/` | Analysis outputs |
+| `presentation/presentation.html` | Class presentation (open in a browser; arrow keys to advance, F full screen, N speaker notes; works offline) |
 | `tests/` | Offline smoke test (tiny random model) and synthetic-results test for notebook 03 |
 | `commit_and_push.bat` | Double-click on Windows to commit and push this folder |
 

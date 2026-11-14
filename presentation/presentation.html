@@ -193,11 +193,11 @@ svg text{font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
 </section>
 
 <!-- 7 GRID -->
-<section class="slide" data-notes="We built a controlled grid. Every question was leaked 1, 4 or 16 times, in one of the three forms. That gives nine groups of 150 questions each. 450 questions were never leaked; they are our control group, like a placebo group in a medical trial.">
+<section class="slide" data-notes="We built a controlled grid. Every question was leaked 1, 4 or 16 times, in one of the three forms. That gives nine groups of 150 questions each. 450 questions were never inserted; they are our control group, like a placebo group in a medical trial. One honest caveat: the model may have seen some questions during its original pretraining. We could check only 20 percent of them against its training data, and found one.">
   <div class="kicker">Experiment design</div>
   <h2>A controlled leak: 3 doses × 3 forms</h2>
   <div id="grid" style="margin-top:14px"></div>
-  <div class="take" data-s="4">Because <b>we</b> decided which questions leaked, we know the true answer for every question.</div>
+  <div class="take" data-s="4">Because <b>we</b> decided which questions leaked, we know exactly what each question was exposed to <b>in our experiment</b>.</div>
 </section>
 
 <!-- 8 PIPELINE -->
@@ -243,18 +243,18 @@ svg text{font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
 </section>
 
 <!-- 12 RQ3 scatter -->
-<section class="slide" data-notes="The main question. Each dot is one leaked question. Left to right is the detector score; bottom to top is how much that question was inflated. If detectors predicted inflation, dots would follow the dashed line. Instead we get a cloud. Even inside one group, like exact copies leaked 16 times, the correlation is only 0.08.">
+<section class="slide" data-notes="The main question. Each dot is one leaked question. Left to right is the detector score; bottom to top is how much that question was inflated. If detectors predicted inflation, dots would follow the dashed line. Instead we get a cloud. Even inside one group, like exact copies leaked 16 times, the correlation is only 0.08. And on questions we never leaked, the same detector still correlates about 0.10 with score gain, so much of this weak link is not about leaking at all. It is not noise either: each question's gain is almost the same across our three training runs.">
   <div class="kicker">RQ3 · Main result</div>
   <h2>A stronger beep does <span style="color:var(--alert)">not</span> mean a bigger score jump</h2>
   <div id="rq3"></div>
 </section>
 
 <!-- 13 R2 -->
-<section class="slide" data-notes="We trained prediction models to estimate each question's inflation. All five detectors together explain under 10 percent of it. Simply knowing how hard the question was explains 18 percent, nearly twice as much. Detectors only become useful when combined with question features.">
+<section class="slide" data-notes="We trained prediction models, with cross-validation, to estimate each question's inflation. All five detectors together explain under 10 percent of it. Simply knowing how hard the question was explains 18 percent, nearly twice as much. To be fair to the detectors: if we already know the question's difficulty and the original model's loss, adding detectors raises it from 19 to 35 percent. So they carry some information, but not on their own, and about two-thirds of the inflation remains unexplained.">
   <div class="kicker">RQ3 · Who predicts inflation best?</div>
-  <h2>Question difficulty beats all five detectors</h2>
+  <h2>On their own, detectors predict less than difficulty</h2>
   <div id="r2"></div>
-  <div class="take" data-s="2">All 5 detectors together explain <b>9.5%</b> of inflation; difficulty alone explains <b>18.2%</b>.</div>
+  <div class="take" data-s="2">Alone, detectors explain <b>9.5%</b>, less than difficulty (<b>18.2%</b>). Added to question features they help (<b>19% → 35%</b>), but most of the inflation stays unexplained.</div>
 </section>
 
 <!-- 14 AHA -->
@@ -286,12 +286,12 @@ svg text{font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
 </section>
 
 <!-- 17 LIMITS -->
-<section class="slide" data-notes="Limitations: one small model, one benchmark, and contamination added by fine-tuning rather than pretraining, so big models may behave differently. Next steps: a second model such as Qwen 2.5, more benchmarks, and leaks during pretraining.">
+<section class="slide" data-notes="Limitations: one small model, one benchmark, and contamination added by fine-tuning rather than pretraining, so big models may behave differently. We could check only 20 percent of the questions against the model's original training data. 42 percent of our paraphrases were looser rewrites than planned; re-running without them gives the same direction. The manual check of 50 paraphrases is still pending. Next steps: a second model such as Qwen 2.5, more benchmarks, and leaks during pretraining.">
   <div class="kicker">Honest limits</div>
   <h2>Limitations and future work</h2>
   <div class="row" style="margin-top:24px">
     <div class="card col" data-s="0"><div class="kicker" style="color:var(--muted)">Limitations</div>
-      <ul class="ul"><li>One small model (Pythia-410M)</li><li>One benchmark (ARC-Easy)</li><li>Leaks added by fine-tuning, not pretraining</li><li>Pile prior-exposure check covered 483 questions</li></ul></div>
+      <ul class="ul"><li>One small model, one benchmark</li><li>Leaks added by fine-tuning, not pretraining</li><li>Prior exposure checked for 20% of questions</li><li>42% of paraphrases looser than planned</li><li>Manual paraphrase check still pending</li></ul></div>
     <div class="card col" data-s="1"><div class="kicker">Future work</div>
       <ul class="ul"><li>Larger and newer models (e.g., Qwen2.5)</li><li>More benchmarks and task types</li><li>Leaks during pretraining</li><li>Detectors built to predict inflation</li></ul></div>
   </div>
@@ -364,7 +364,7 @@ function t(x,y,s,o){o=o||{};return `<text x="${x}" y="${y}" font-size="${o.fs||2
   const W=1420,H=470,L=120,R=1390,T=40,B=400,ymin=-15,ymax=50;
   const Y=v=>B-(v-ymin)/(ymax-ymin)*(B-T);
   const vals={e:[0.4,4.4,32.7],n:[-1.6,2.0,24.0],p:[-5.1,4.7,14.2]};
-  const ci={e:[[-8,9.1],[-3.8,12.4],[24.4,40.4]],n:[[-9.3,6.2],[-6,9.8],[15.8,32.2]],p:[[-12.9,2.4],[-2.4,12],[6.4,22]]};
+  const ci={e:[[-8.8,10.0],[-4.6,13.8],[23.6,41.8]],n:[[-10.3,7.3],[-7.0,10.8],[14.9,33.2]],p:[[-13.6,3.8],[-3.9,13.2],[5.1,23.0]]};
   let s='';
   [-10,0,10,20,30,40].forEach(v=>{s+=`<line x1="${L}" y1="${Y(v)}" x2="${R}" y2="${Y(v)}" stroke="${v==0?'#9aa0ab':'#eceef2'}" stroke-width="${v==0?3:2}"/>`+t(L-14,Y(v)+8,(v>0?'+':'')+v,{a:'end',fs:22,c:C.mut})});
   s+=t(20,T-14,'Inflation (accuracy points)',{fs:22,c:C.mut});
@@ -426,12 +426,13 @@ function t(x,y,s,o){o=o||{};return `<text x="${x}" y="${y}" font-size="${o.fs||2
   // side panel
   s+=`<g data-s="2"><rect x="1120" y="${T+20}" width="290" height="190" rx="14" fill="#f3f5f8"/>${t(1265,T+70,'All leaked questions',{a:'middle',fs:24,c:C.mut})}${t(1265,T+140,'ρ = 0.30',{a:'middle',fs:52,w:800})}${t(1265,T+185,'weak',{a:'middle',fs:26,c:C.mut})}</g>`;
   s+=`<g data-s="3"><rect x="1120" y="${T+240}" width="290" height="210" rx="14" fill="#e8f1fc" stroke="${C.e}" stroke-width="3"/>${t(1265,T+285,'Same group only',{a:'middle',fs:24,c:C.mut})}${t(1265,T+315,'(16× exact copies)',{a:'middle',fs:24,c:C.e,w:700})}${t(1265,T+385,'ρ = 0.08',{a:'middle',fs:52,w:800,c:C.e})}${t(1265,T+425,'almost none',{a:'middle',fs:26,c:C.mut})}</g>`;
+  s+=`<g data-s="4"><rect x="${L+10}" y="${B-70}" width="760" height="58" rx="10" fill="#fdecec" stroke="${C.alert}" stroke-width="2"/>${t(L+30,B-32,'Even on never-leaked questions: ρ ≈ 0.10',{fs:28,w:800,c:C.alert})}</g>`;
   document.getElementById('rq3').innerHTML=svg(W,H,s);
 })();
 
 /* ---- R2 bars ---- */
 (function(){
-  const d=[['Random guess',0,C.c],['FSD only',1.7,C.c],['Knowing the true leak dose',6.0,C.c],['All 5 detectors together',9.5,C.alert],['Question difficulty only',18.2,C.e],['Detectors + question features',35.4,C.p]];
+  const d=[['Random guess',0,C.c],['Knowing the true leak dose',6.0,C.c],['All 5 detectors together',9.5,C.alert],['Question difficulty only',18.2,C.e],['Difficulty + base-model loss',19.3,C.e],['Difficulty + loss + 5 detectors',35.4,C.p]];
   const W=1420,H=520,L=520,R=1300,T=20,rh=72,mx=40;
   let s='';
   d.forEach((r,i)=>{const y=T+i*rh, w=(R-L)*r[1]/mx;
@@ -457,8 +458,8 @@ function t(x,y,s,o){o=o||{};return `<text x="${x}" y="${y}" font-size="${o.fs||2
     g+=`<line x1="${x+60}" y1="${base}" x2="${x+580}" y2="${base}" stroke="#9aa0ab" stroke-width="3"/>`;
     return g+'</g>';
   }
-  let s=panel(20,'Question + answer leaked','exact copies, main run',12.9,0.90,C.ink,1);
-  s+=panel(760,'Question only leaked','same setup, answers removed',0.9,0.74,C.alert,2);
+  let s=panel(20,'Question + answer leaked','exact copies, main run (seed 1)',12.9,0.90,C.ink,1);
+  s+=panel(760,'Question only leaked','same setup, answers removed (one run)',0.9,0.74,C.alert,2);
   document.getElementById('aha').innerHTML=svg(W,H,s);
 })();
 

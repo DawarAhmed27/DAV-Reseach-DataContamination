@@ -22,6 +22,7 @@ five detectors (Perplexity, Zlib, Min-K%, Min-K%++, FSD). We then test whether d
 | `dcl/pipeline.py` | `prepare_data()` (notebook 01) and `run_experiment()` (notebook 02) |
 | `dcl/analysis.py` | Inflation, AUROC, agreement, combined predictor, mixed model, McNemar, DeLong, ablations, error analysis, literature comparison |
 | `dcl/figures.py`, `dcl/dashboard.py` | 12 report figures and the interactive dashboard |
+| `dcl/supplement.py` | Analyses added after review, from saved results (per-seed AUROC, joint bootstrap CIs, extended CV baselines, top-10% share, leave-one-overlap-out, negative control, seed reliability, paired bootstrap of correlation differences); run `python -m dcl.supplement` |
 | `notebooks/` | `01_prepare_data`, `02_train_evaluate`, `03_analysis_figures` (Kaggle-ready) |
 | `data/` | `items.csv` (items, groups, variants), `control_items.csv`, paraphrase manual check, logs |
 | `results/` | One CSV per run (item-level scores), training loss and run logs |
@@ -45,6 +46,7 @@ Import a notebook with *File > Import Notebook > GitHub* or upload the `.ipynb` 
    Optional if time allows: `["fullft160m", "rank64", "filler10m"]`.
    After each session download the `results_<run>.zip` files, unzip into this folder, run `commit_and_push.bat`.
 4. **Notebook 03 (CPU, about 5 min).** Produces `tables/`, `figures/`, `dashboard/dashboard.html`. Commit them.
+5. **Supplementary analyses (CPU, under 1 min).** `python -m dcl.supplement` writes `tables/supplement_*.csv`.
 
 Run locally instead: `pip install -r requirements.txt`, then run the notebooks from this folder (a GPU is needed for 01-02).
 

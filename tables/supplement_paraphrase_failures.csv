@@ -1,0 +1,2 @@
+paraphrase_items,passed,failed,failed_sim_below_0.85,failed_sim_ok_but_shared_8gram,mean_sim_passed,mean_sim_failed
+450,261,189,189,0,0.8877224090912333,0.7878299730795401

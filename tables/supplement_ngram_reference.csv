@@ -1,0 +1,10 @@
+group,auroc_13gram_seed1,nan_share
+exact_x1,1.0,0.0
+exact_x4,1.0,0.0
+exact_x16,1.0,0.0
+near_dup_x1,0.6733333333333333,0.0
+near_dup_x4,0.6666666666666666,0.0
+near_dup_x16,0.6666666666666666,0.0
+paraphrase_x1,0.5166666666666667,0.0
+paraphrase_x4,0.5266666666666666,0.0
+paraphrase_x16,0.5266666666666666,0.0

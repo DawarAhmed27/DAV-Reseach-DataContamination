@@ -1,0 +1,9 @@
+detector,share_of_positive_inflation_in_top10pct
+Perplexity,0.16133263025004946
+Zlib,0.19251297014786972
+Min-K%,0.17692303100914944
+Min-K%++,0.17336195940067656
+FSD,0.16044547237240578
+"Reference: true exposure (dose, overlap)",0.17186697880784285
+Reference: difficulty (lowest base p),0.2407425372889034
+Reference: random,0.1

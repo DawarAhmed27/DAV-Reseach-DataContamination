@@ -72,7 +72,7 @@ def fig_inflation_heatmap(cell, out):
     axes[1].set_title("Inflation in accuracy (points)")
     for a in axes:
         a.set_xlabel("Copies seen during training (dose)")
-    fig.suptitle("Figure 1. Score inflation by dose and overlap type (vs clean items, mean of 3 seeds)", x=0.01, ha="left", fontsize=11)
+    fig.suptitle("Score inflation by dose and overlap type (vs clean items, mean of 3 seeds)", x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig01_inflation_heatmap")
 
 
@@ -90,7 +90,7 @@ def fig_inflation_dose(cell, out):
     ax.set_xlim(0.8, 40)
     ax.set_xlabel("Copies seen during training (log scale)")
     ax.set_ylabel("Inflation in p(correct)")
-    ax.set_title("Figure 2. Inflation grows with dose; bands are 95% bootstrap CIs", loc="left")
+    ax.set_title("Inflation grows with dose; bands are 95% bootstrap CIs (cell and clean items resampled)", loc="left")
     return _save(fig, out, "fig02_inflation_vs_dose")
 
 
@@ -108,7 +108,7 @@ def fig_auroc_heatmap(det, out):
     cb = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
     cb.set_label("AUROC (0.5 = chance)", color=INK2)
     cb.outline.set_visible(False)
-    ax.set_title("Figure 3. Detection AUROC: contaminated items of each cell vs clean items", loc="left")
+    ax.set_title("Detection AUROC: contaminated items of each cell vs clean items", loc="left")
     return _save(fig, out, "fig03_auroc_heatmap")
 
 
@@ -127,7 +127,7 @@ def fig_roc_curves(avg, out):
         ax.set_aspect("equal")
     axes[0].set_ylabel("True positive rate")
     axes[-1].legend(loc="lower right", fontsize=8)
-    fig.suptitle("Figure 4. ROC curves at the highest dose: detection weakens from exact copies to paraphrases",
+    fig.suptitle("ROC curves at the highest dose: detection weakens from exact copies to paraphrases",
                  x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig04_roc_curves")
 
@@ -148,7 +148,7 @@ def fig_scatter(avg, out, det="det_minkpp"):
         ax.set_xlabel(f"{lab} score (higher = 'seen')")
     axes[0].set_ylabel("Item inflation in p(correct)")
     axes[-1].legend(title="dose", fontsize=8, title_fontsize=8, loc="upper left")
-    fig.suptitle(f"Figure 5. Item-level detector score vs score inflation ({lab})", x=0.01, ha="left", fontsize=11)
+    fig.suptitle(f"Item-level detector score vs score inflation ({lab})", x=0.01, ha="left", fontsize=11)
     return _save(fig, out, f"fig05_scatter_{det.replace('det_', '')}")
 
 
@@ -172,7 +172,7 @@ def fig_forest(agr, out):
         ax.invert_yaxis()
     handles = [plt.Line2D([], [], color=DET_COL[d], marker="o", lw=2, label=d) for d in dets]
     axes[-1].legend(handles=handles, fontsize=8, loc="lower right")
-    fig.suptitle("Figure 6. Within-cell correlation between detector score and inflation (95% bootstrap CI)",
+    fig.suptitle("Within-cell correlation between detector score and inflation (95% bootstrap CI)",
                  x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig06_within_cell_rho")
 
@@ -192,7 +192,7 @@ def fig_predictor(pred, out):
     ax.axvline(0, color=INK2, lw=1)
     ax.set_xlabel("Cross-validated R² for predicting item inflation")
     ax.grid(axis="y", visible=False)
-    ax.set_title("Figure 7. How well detector scores predict inflation, vs reference predictors (grey)", loc="left")
+    ax.set_title("How well detector scores predict inflation, vs reference predictors (grey)", loc="left")
     return _save(fig, out, "fig07_combined_predictor")
 
 
@@ -221,7 +221,7 @@ def fig_ablation(abl, out):
         ax.grid(axis="x", visible=False)
     axes[0].axhline(0, color=INK2, lw=1)
     axes[0].legend(fontsize=8)
-    fig.suptitle("Figure 8. Ablations: each run changes one component of the main design (one seed)", x=0.01, ha="left", fontsize=11)
+    fig.suptitle("Ablations: each run changes one component of the main design (one seed)", x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig08_ablations")
 
 
@@ -254,7 +254,7 @@ def fig_errors(counts, by_overlap, out):
     axes[1].legend(fontsize=8, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22))
     for ax in axes:
         ax.grid(axis="y", visible=False)
-    fig.suptitle("Figure 9. Error analysis with Min-K%++ (flag = above clean items' 95th percentile; inflated = +0.10 p(correct))",
+    fig.suptitle("Error analysis with Min-K%++ (flag = above clean items' 95th percentile; inflated = +0.10 p(correct))",
                  x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig09_error_analysis")
 
@@ -288,7 +288,7 @@ def fig_literature(det, inter, out):
     ax.set_title("Agreement between detectors (Spearman)\nSamuel et al. [8] report -0.20 to 0.32", loc="left")
     cb = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
     cb.outline.set_visible(False)
-    fig.suptitle("Figure 10. Comparison with published results (different settings; see Table of limits)", x=0.01, ha="left", fontsize=11)
+    fig.suptitle("Comparison with published results (different settings; see Table of limits)", x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig10_literature_comparison")
 
 
@@ -306,7 +306,7 @@ def fig_control(ctrl, out):
     ax.invert_yaxis()
     ax.set_xlabel("Change in accuracy on never-seen items (points)")
     ax.grid(axis="y", visible=False)
-    ax.set_title("Figure 11. Format learning: gain on items the model never saw", loc="left")
+    ax.set_title("Format learning: gain on never-inserted (clean) items", loc="left")
     return _save(fig, out, "fig11_format_control")
 
 
@@ -322,7 +322,7 @@ def fig_training_loss(root, out):
     ax.set_xlabel("Optimiser step")
     ax.set_ylabel("Training loss (10-step mean)")
     ax.legend(fontsize=8, ncol=2)
-    ax.set_title("Figure 12. Training loss of every run", loc="left")
+    ax.set_title("Training loss of every run", loc="left")
     return _save(fig, out, "fig12_training_loss")
 
 

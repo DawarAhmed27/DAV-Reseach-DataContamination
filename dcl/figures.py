@@ -304,7 +304,7 @@ def fig_control(ctrl, out):
         ax.text(x, i, f" {x:+.1f}", va="center", fontsize=9)
     ax.axvline(0, color=INK2, lw=1)
     ax.invert_yaxis()
-    ax.set_xlabel("Change in accuracy on never-seen items (points)")
+    ax.set_xlabel("Change in accuracy on never-inserted items (points)")
     ax.grid(axis="y", visible=False)
     ax.set_title("Format learning: gain on never-inserted (clean) items", loc="left")
     return _save(fig, out, "fig11_format_control")
@@ -317,8 +317,8 @@ def fig_training_loss(root, out):
     fig, ax = plt.subplots(figsize=(7, 3.4))
     for k, f in enumerate(files):
         d = pd.read_csv(f)
-        ax.plot(d["step"], d["loss"].rolling(10, min_periods=1).mean(), lw=1.5, color=CAT[k % 6] if k < 6 else INK2,
-                label=f.stem.replace("_trainloss", ""))
+        ax.plot(d["step"], d["loss"].rolling(10, min_periods=1).mean(), lw=1.4, color=CAT[k % 6] if k < 6 else INK2,
+                ls="-" if k < 6 else ("--" if k == 6 else ":"), label=f.stem.replace("_trainloss", ""))
     ax.set_xlabel("Optimiser step")
     ax.set_ylabel("Training loss (10-step mean)")
     ax.legend(fontsize=8, ncol=2)

@@ -1,0 +1,9 @@
+# Environment used to rerun the analysis (notebook 03 + dcl/supplement.py) from saved results
+# Python 3.13.18 on Linux
+numpy==2.5.3
+pandas==3.0.5
+scipy==1.18.1
+scikit-learn==1.9.1
+statsmodels==0.15.0
+matplotlib==3.11.2
+# Training ran on the Kaggle GPU image (Nov 2026); exact training versions were not logged.

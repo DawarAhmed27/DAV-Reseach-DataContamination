@@ -263,8 +263,8 @@ def fig_errors(counts, by_overlap, out):
 def fig_literature(det, inter, out):
     fig, axes = plt.subplots(1, 2, figsize=(11, 3.8), gridspec_kw={"width_ratios": [1.25, 1]})
     ax = axes[0]
-    ref = [("Fu et al. [3]: pretraining data", 0.49, 0.53), ("Min-K%++ [4]: MIMIR", 0.52, 0.59),
-           ("FSD [5]: Pile, after FSD", 0.57, 0.63), ("Fu et al. [3]: fine-tuning data", 0.41, 0.994)]
+    ref = [("Fu et al.: pretraining data", 0.49, 0.53), ("Min-K%++ (Zhang et al.): MIMIR", 0.52, 0.59),
+           ("FSD (Zhang et al.): Pile, after FSD", 0.57, 0.63), ("Fu et al.: fine-tuning data", 0.41, 0.994)]
     for i, (lab, lo, hi) in enumerate(ref):
         ax.plot([lo, hi], [i, i], color="#a3a29b", lw=6, solid_capstyle="round")
     ours = det.groupby("overlap")["auroc"].agg(["min", "max"]).reindex(C.OVERLAPS)
@@ -285,10 +285,10 @@ def fig_literature(det, inter, out):
     ax.grid(False)
     for (i, j), v in np.ndenumerate(M):
         ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=8.5, color="white" if abs(v) > 0.7 else INK)
-    ax.set_title("Agreement between detectors (Spearman)\nSamuel et al. [8] report -0.20 to 0.32", loc="left")
+    ax.set_title("Agreement between detectors (Spearman)\nSamuel et al. report -0.20 to 0.32", loc="left")
     cb = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
     cb.outline.set_visible(False)
-    fig.suptitle("Comparison with published results (different settings; see Table of limits)", x=0.01, ha="left", fontsize=11)
+    fig.suptitle("Comparison with published results (different settings and models)", x=0.01, ha="left", fontsize=11)
     return _save(fig, out, "fig10_literature_comparison")
 
 

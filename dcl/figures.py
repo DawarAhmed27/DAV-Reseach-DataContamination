@@ -146,6 +146,17 @@ def fig_scatter(avg, out, det="det_minkpp"):
         ax.axhline(0, color=INK2, lw=0.8)
         ax.set_title(OVERLAP_LAB[o], loc="left")
         ax.set_xlabel(f"{lab} score (higher = 'seen')")
+    # common x-range from the 0.5th-99.5th percentile, so a few extreme scores do not compress the panels
+    shown = avg[avg["group"].isin(["clean"] + [f"{o}_x{d}" for o in C.OVERLAPS for d in C.DOSES])]
+    lo, hi = shown[det].quantile([0.005, 0.995])
+    pad = 0.05 * (hi - lo)
+    for ax, o in zip(axes, C.OVERLAPS):
+        ax.set_xlim(lo - pad, hi + pad)
+        sub = shown[shown["group"].isin(["clean"] + [f"{o}_x{d}" for d in C.DOSES])]
+        n_out = int(((sub[det] < lo - pad) | (sub[det] > hi + pad)).sum())
+        if n_out:
+            ax.text(0.98, 0.02, f"{n_out} point{'s' if n_out > 1 else ''} outside axis", transform=ax.transAxes,
+                    ha="right", va="bottom", fontsize=7.5, color=INK2)
     axes[0].set_ylabel("Item inflation in p(correct)")
     axes[-1].legend(title="dose", fontsize=8, title_fontsize=8, loc="upper left")
     fig.suptitle(f"Item-level detector score vs score inflation ({lab})", x=0.01, ha="left", fontsize=11)

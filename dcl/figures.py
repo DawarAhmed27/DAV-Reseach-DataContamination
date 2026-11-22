@@ -36,7 +36,7 @@ DET_LS = dict(zip(DETECTORS.values(), ["-", (0, (4, 1.5)), (0, (1, 1)), (0, (5, 
 OVERLAP_HATCH = {"exact": "", "near_dup": "////", "paraphrase": "...."}
 BLUES = LinearSegmentedColormap.from_list("blues", ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
 DIVERGE = LinearSegmentedColormap.from_list("div", ["#e34948", "#f0efec", "#2a78d6"])
-REF_GREY, CTX_GREY, LIGHT_GREY = "#a3a29b", "#d4d3cd", "#e9e8e4"
+REF_GREY, CTX_GREY, LIGHT_GREY = "#a3a29b", "#c3c2b7", "#d9d8d2"
 CRITICAL = "#d03b3b"
 FULL, COL = 7.16, 3.5
 
@@ -47,7 +47,7 @@ def _tint(hexcol, f):
     return tuple(a * (1 - f) + b * f)
 
 
-DOSE_TINT = {1: 0.62, 4: 0.32, 16: 0.0}
+DOSE_TINT = {1: 0.5, 4: 0.25, 16: 0.0}
 
 plt.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
@@ -56,7 +56,7 @@ plt.rcParams.update({
     "axes.edgecolor": AXIS, "axes.labelcolor": INK, "xtick.color": INK2, "ytick.color": INK2,
     "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "grid.color": GRID,
     "grid.linewidth": 0.5, "axes.linewidth": 0.6, "xtick.major.width": 0.6, "ytick.major.width": 0.6,
-    "legend.frameon": False, "lines.linewidth": 1.6, "figure.constrained_layout.use": True,
+    "legend.frameon": False, "axes.axisbelow": True, "lines.linewidth": 1.6, "figure.constrained_layout.use": True,
     "pdf.fonttype": 42, "ps.fonttype": 42,
 })
 
@@ -94,7 +94,7 @@ def _heat(fig, ax, M, fmt, cmap, vmin, vmax, cbar_label):
         sp.set_visible(False)
     for (i, j), v in np.ndenumerate(M.to_numpy()):
         frac = (v - vmin) / max(1e-9, vmax - vmin)
-        ax.text(j, i, fmt.format(v), ha="center", va="center", fontsize=7.5, color="white" if frac > 0.6 else INK)
+        ax.text(j, i, fmt.format(v), ha="center", va="center", fontsize=7.5, color="white" if abs(frac - 0.5) > 0.36 else INK)
     _cbar(fig, im, ax, cbar_label)
 
 
@@ -105,7 +105,8 @@ def fig_inflation_heatmap(cell, out):
     for ax, col, fmt, lab, title in [(axes[0], "infl_p", "{:+.3f}", "p(correct)", "Inflation in p(correct)"),
                                      (axes[1], "infl_acc_pts", "{:+.1f}", "accuracy points", "Inflation in accuracy points")]:
         M = _grid(c, col)
-        _heat(fig, ax, M, fmt, BLUES, min(0, float(M.min().min())), float(M.max().max()), lab)
+        m = float(np.abs(M.to_numpy()).max())
+        _heat(fig, ax, M, fmt, DIVERGE, -m, m, lab)
         ax.set_title(title, loc="left")
         ax.set_xlabel("Copies inserted (dose)")
     return _save(fig, out, "fig01_inflation_heatmap")
@@ -125,20 +126,21 @@ def fig_inflation_dose(cell, out):
                     xytext=(6, 0), textcoords="offset points", va="center", fontsize=6.8, color=INK)
     ax.axhline(0, color=INK2, lw=0.8)
     ax.set_xticks([0, 1, 2], ["×1", "×4", "×16"])
-    ax.set_xlim(-0.4, 3.35)
+    ax.set_xlim(-0.35, 3.0)
     ax.set_xlabel("Copies inserted (dose, log spacing)")
-    ax.set_ylabel("Inflation in p(correct)")
+    ax.set_ylabel("Inflation: Δ p(correct) vs clean items")
     ax.grid(axis="x", visible=False)
     return _save(fig, out, "fig02_inflation_vs_dose")
 
 
 # ------------------------------------------------------------------ RQ2 detection
 def fig_auroc_heatmap(det, out):
+    """Diverging scale symmetric about chance (0.5); colour steps are equal on both sides."""
     dets = list(DETECTORS.values())
     piv = det.pivot_table(index="detector", columns="group", values="auroc").reindex(index=dets, columns=C.CELLS)
-    fig, ax = plt.subplots(figsize=(FULL, 2.05))
+    fig, ax = plt.subplots(figsize=(5.9, 2.1))
     M = piv.to_numpy()
-    im = ax.imshow(M, cmap=DIVERGE, norm=TwoSlopeNorm(vcenter=0.5, vmin=0.3, vmax=1.0), aspect="auto")
+    im = ax.imshow(M, cmap=DIVERGE, vmin=0.1, vmax=0.9, aspect="auto")
     ax.set_xticks(range(9), ["×1", "×4", "×16"] * 3)
     ax.set_yticks(range(len(dets)), dets)
     ax.grid(False)
@@ -146,20 +148,22 @@ def fig_auroc_heatmap(det, out):
     for sp in ax.spines.values():
         sp.set_visible(False)
     for (i, j), v in np.ndenumerate(M):
-        ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=7, color="white" if v > 0.82 else INK)
+        ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=7, color="white" if v > 0.79 else INK)
     for b in (2.5, 5.5):
         ax.axvline(b, color=SURFACE, lw=3)
     for k, o in enumerate(C.OVERLAPS):
-        ax.text(3 * k + 1, -0.75, OVERLAP_LAB[o], ha="center", va="bottom", fontsize=7.5, fontweight="bold",
-                color=INK)
+        ax.text(3 * k + 1, -0.75, OVERLAP_LAB[o], ha="center", va="bottom", fontsize=7.5, fontweight="bold", color=INK)
     ax.set_ylim(len(dets) - 0.5, -1.05)
-    _cbar(fig, im, ax, "AUROC (0.5 = chance)")
+    ax.set_xlabel("Copies inserted (dose) within each overlap type")
+    ax.set_ylabel("Detector")
+    cb = _cbar(fig, im, ax, "AUROC (0.5 = chance)")
+    cb.set_ticks([0.1, 0.3, 0.5, 0.7, 0.9])
     return _save(fig, out, "fig03_auroc_heatmap")
 
 
 def fig_roc_curves(avg, out):
     clean = avg[avg["group"] == "clean"]
-    fig, axes = plt.subplots(1, 3, figsize=(FULL, 2.55), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(5.6, 2.35), sharey=True)
     for ax, o in zip(axes, C.OVERLAPS):
         d = avg[avg["group"] == f"{o}_x16"]
         y = np.r_[np.ones(len(d)), np.zeros(len(clean))]
@@ -169,67 +173,79 @@ def fig_roc_curves(avg, out):
         ax.plot([0, 1], [0, 1], color=MUTED, lw=0.8, ls=(0, (3, 2)))
         ax.set_title(f"{OVERLAP_LAB[o]}, ×16", loc="left")
         ax.set_xlabel("False positive rate")
-        ax.set_aspect("equal")
+        ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+        ax.set_xticks([0, 0.5, 1]); ax.set_yticks([0, 0.5, 1])
+        ax.set_box_aspect(1)
     axes[0].set_ylabel("True positive rate")
-    axes[-1].legend(loc="lower right", handlelength=1.4)
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="outside lower center", ncol=5, handlelength=2.2)
     return _save(fig, out, "fig04_roc_curves")
 
 
 # ------------------------------------------------------------------ RQ3 item-level link
 def fig_scatter(avg, out, det="det_minkpp"):
     """Hue = overlap type, lightness = dose; ink line = mean inflation in score deciles (all doses)."""
-    fig, axes = plt.subplots(1, 3, figsize=(FULL, 2.55), sharey=True)
+    from matplotlib.legend_handler import HandlerTuple
+    fig, axes = plt.subplots(1, 3, figsize=(FULL, 2.6), sharey=True)
     lab = DETECTORS[det]
     shown = avg[avg["group"].isin(["clean"] + [f"{o}_x{d}" for o in C.OVERLAPS for d in C.DOSES])]
     lo, hi = shown[det].quantile([0.005, 0.995])
     pad = 0.05 * (hi - lo)
     cl = avg[avg["group"] == "clean"]
     for ax, o in zip(axes, C.OVERLAPS):
-        ax.scatter(cl[det], cl["infl_p"], s=5, color=LIGHT_GREY, edgecolor="none", label="clean", zorder=1)
+        ax.scatter(cl[det], cl["infl_p"], s=4, color=REF_GREY, alpha=0.35, edgecolor="none", zorder=1)
         cont = avg[avg["overlap"] == o]
         for dose in C.DOSES:
             d = cont[cont["dose"] == dose]
-            ax.scatter(d[det], d["infl_p"], s=7, color=_tint(OVERLAP_COL[o], DOSE_TINT[dose]), edgecolor="none",
-                       label=f"×{dose}", zorder=2 + dose / 100)
+            ax.scatter(d[det], d["infl_p"], s=5, color=_tint(OVERLAP_COL[o], DOSE_TINT[dose]), alpha=0.6,
+                       edgecolor="none", zorder=2 + dose / 100)
         q = pd.qcut(cont[det], 10, labels=False, duplicates="drop")
         b = cont.groupby(q).agg(x=(det, "median"), y=("infl_p", "mean"))
-        ax.plot(b["x"], b["y"], color=INK, lw=1.3, marker="o", ms=2.8, zorder=5, label="decile mean")
+        ax.plot(b["x"], b["y"], color=INK, lw=1.4, marker="o", ms=2.8, zorder=5)
         ax.axhline(0, color=INK2, lw=0.7, zorder=0)
-        rho = stats.spearmanr(cont[det], cont["infl_p"]).statistic
-        ax.set_title(f"{OVERLAP_LAB[o]}  (pooled ρ = {rho:.2f})", loc="left")
+        within = np.mean([stats.spearmanr(g[det], g["infl_p"]).statistic for _, g in cont.groupby("dose")])
+        ax.set_title(OVERLAP_LAB[o], loc="left")
+        ax.text(0.02, 0.97, f"mean within-cell ρ = {within:.2f}", transform=ax.transAxes, va="top", fontsize=7,
+                color=INK, bbox=dict(boxstyle="round,pad=0.2", fc=SURFACE, ec="none", alpha=0.85), zorder=6)
         ax.set_xlabel(f"{lab} score (higher = 'seen')")
         ax.set_xlim(lo - pad, hi + pad)
-    axes[0].set_ylabel("Item inflation in p(correct)")
-    h = [plt.Line2D([], [], ls="", marker="o", ms=4, color=LIGHT_GREY, label="clean (never inserted)")]
-    h += [plt.Line2D([], [], ls="", marker="o", ms=4, color=_tint(MUTED, DOSE_TINT[d]) if d < 16 else INK2,
-                     label=f"×{d}") for d in C.DOSES]
-    h += [plt.Line2D([], [], color=INK, lw=1.3, marker="o", ms=2.8, label="decile mean")]
-    fig.legend(handles=h, loc="outside lower center", ncol=5, handletextpad=0.3, columnspacing=1.2,
-               title="dose = lightness of the panel colour", title_fontsize=6.5)
+    axes[0].set_ylabel("Item inflation, Δ p(correct)")
+    mk = lambda c: plt.Line2D([], [], ls="", marker="o", ms=4, color=c)
+    h = [mk(REF_GREY)] + [tuple(mk(_tint(OVERLAP_COL[o], DOSE_TINT[d])) for o in C.OVERLAPS) for d in C.DOSES]
+    h += [plt.Line2D([], [], color=INK, lw=1.4, marker="o", ms=2.8)]
+    fig.legend(h, ["clean (never inserted)", "×1", "×4", "×16", "decile mean"], loc="outside lower center", ncol=5,
+               handler_map={tuple: HandlerTuple(ndivide=None, pad=0.2)}, handletextpad=0.4, columnspacing=1.4)
     return _save(fig, out, f"fig05_scatter_{det.replace('det_', '')}")
 
 
 def fig_forest(agr, out):
     w = agr[agr["scope"] == "within cell"].copy()
-    fig, axes = plt.subplots(1, 3, figsize=(FULL, 2.7), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(5.9, 3.3), sharex=True, sharey=True)
     dets = list(DETECTORS.values())
+    step = len(dets) + 1.5
     for ax, o in zip(axes, C.OVERLAPS):
         for k, dose in enumerate(C.DOSES):
             g = f"{o}_x{dose}"
+            sub = w[w["group"] == g]
             for j, dl in enumerate(dets):
-                r = w[(w["group"] == g) & (w["detector"] == dl)].iloc[0]
-                y = k * (len(dets) + 1.5) + j
+                r = sub[sub["detector"] == dl].iloc[0]
+                y = k * step + j
                 ax.plot([r["rho_lo"], r["rho_hi"]], [y, y], color=DET_COL[dl], lw=1.3)
                 ax.plot(r["rho"], y, DET_MARK[dl], color=DET_COL[dl], ms=3.8, mec=SURFACE, mew=0.6)
+            m = sub["rho"].mean()
+            ax.plot([m, m], [k * step - 0.6, k * step + len(dets) - 0.4], color=INK, lw=1.0)
         ax.axvline(0, color=INK2, lw=0.8)
-        ax.set_yticks([k * (len(dets) + 1.5) + 2 for k in range(3)], [f"×{d}" for d in C.DOSES])
         ax.set_title(OVERLAP_LAB[o], loc="left")
-        ax.set_xlabel("Spearman ρ, score vs inflation")
+        ax.set_xlabel("Spearman ρ")
         ax.grid(axis="y", visible=False)
         ax.tick_params(axis="y", length=0)
-        ax.invert_yaxis()
-    handles = [plt.Line2D([], [], color=DET_COL[d], marker=DET_MARK[d], ms=3.8, lw=1.3, label=d) for d in dets]
-    fig.legend(handles=handles, loc="outside lower center", ncol=5)
+    ticks = [k * step + j for k in range(3) for j in range(len(dets))]
+    axes[0].set_yticks(ticks, [f"{d}" for _ in C.DOSES for d in dets], fontsize=6.5)
+    axes[0].invert_yaxis()
+    for k, dose in enumerate(C.DOSES):
+        axes[-1].text(1.03, k * step + 2, f"×{dose}", transform=axes[-1].get_yaxis_transform(), va="center",
+                      fontsize=7.5, fontweight="bold", color=INK)
+    fig.legend(handles=[plt.Line2D([], [], color=INK, lw=1.0, label="mean of the 5 detectors in that cell")],
+               loc="outside lower center", fontsize=6.5, handlelength=1.2)
     return _save(fig, out, "fig06_within_cell_rho")
 
 
@@ -241,15 +257,18 @@ def fig_cell_vs_item(cell, det, agr, out, det_name="Min-K%++"):
     c = cell[cell["dose"] > 0].set_index("group")
     for o in C.OVERLAPS:
         g = [f"{o}_x{d}" for d in C.DOSES]
-        ax.plot(c.loc[g, "infl_acc_pts"], a.loc[g], color=OVERLAP_COL[o], lw=1, alpha=0.6, zorder=1)
-        ax.scatter(c.loc[g, "infl_acc_pts"], a.loc[g], s=26, color=OVERLAP_COL[o], marker=OVERLAP_MARK[o],
+        ax.plot(c.loc[g, "infl_p"], a.loc[g], color=OVERLAP_COL[o], lw=1.1, zorder=1)
+        ax.scatter(c.loc[g, "infl_p"], a.loc[g], s=26, color=OVERLAP_COL[o], marker=OVERLAP_MARK[o],
                    edgecolor=SURFACE, linewidth=0.8, zorder=3, label=OVERLAP_LAB[o])
-        ax.annotate("×16", (c.loc[g[-1], "infl_acc_pts"], a.loc[g[-1]]), xytext=(5, 2),
-                    textcoords="offset points", fontsize=6.5, color=INK2)
-    rho_cells = stats.spearmanr(c.loc[a.index.intersection(c.index), "infl_acc_pts"],
+        for gg, d in ((g[-1], 16),):
+            ax.annotate(f"×{d}", (c.loc[gg, "infl_p"], a.loc[gg]), xytext=(4, 3) if d == 16 else (-4, 4),
+                        ha="left" if d == 16 else "right", textcoords="offset points", fontsize=6.5, color=INK2)
+    rho_cells = stats.spearmanr(c.loc[a.index.intersection(c.index), "infl_p"],
                                 a.loc[a.index.intersection(c.index)]).statistic
     ax.axhline(0.5, color=MUTED, lw=0.8, ls=(0, (3, 2)))
-    ax.set_xlabel("Cell inflation (accuracy points)")
+    ax.text(0.99, 0.5, "chance", transform=ax.get_yaxis_transform(), va="bottom", ha="right",
+            fontsize=6.5, color=MUTED)
+    ax.set_xlabel("Cell inflation, Δ p(correct)")
     ax.set_ylabel(f"{det_name} AUROC")
     ax.set_title(f"Across the 9 cells: ρ = {rho_cells:.2f}", loc="left")
     ax.legend(loc="lower right", handletextpad=0.2, title="each line: ×1 → ×4 → ×16", title_fontsize=6.5)
@@ -300,7 +319,11 @@ def fig_predictor(pred, out, extended=None):
     ax.set_yticks(y, [d[0] for d in data])
     ax.set_xlabel("Cross-validated R² (item inflation)")
     ax.set_xlim(0, 0.42)
-    ax.grid(axis="y", visible=False)
+    ax.grid(False)
+    ax.set_xticks([0, 0.1, 0.2, 0.3, 0.4])
+    for i, (_, v, r) in enumerate(data):
+        if abs(v) < 0.005:
+            ax.plot([0, 0], [i - 0.31, i + 0.31], color=REF_GREY if r else INK2, lw=2)
     ax.tick_params(axis="y", length=0)
     ax.legend(handles=[plt.Rectangle((0, 0), 1, 1, color=INK2, label="uses detector scores"),
                        plt.Rectangle((0, 0), 1, 1, color=REF_GREY, label="reference predictor")],
@@ -316,7 +339,7 @@ ABL_LAB = {"seed1": "Main (seed 1)", "qonly": "Question only", "dilution": "Half
 def fig_ablation(abl, out):
     runs = [r for r in ABL_LAB if r in set(abl["run"])]
     a = abl.set_index("run").loc[runs]
-    fig, axes = plt.subplots(1, 2, figsize=(FULL, 2.45))
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.45))
     x = np.arange(len(runs))
     w = 0.26
     for k, o in enumerate(C.OVERLAPS):
@@ -327,10 +350,11 @@ def fig_ablation(abl, out):
     axes[0].set_ylabel("Inflation (accuracy points)")
     axes[0].set_title("Inflation, mean over doses", loc="left")
     axes[0].axhline(0, color=INK2, lw=0.8)
-    axes[1].set_ylabel("Min-K%++ AUROC at ×16")
+    axes[1].set_ylabel("Min-K%++ AUROC at ×16\n(bars measured from chance)")
+    axes[0].set_yticks(np.arange(-2, 15, 2))
     axes[1].axhline(0.5, color=INK2, lw=0.8)
     axes[1].set_ylim(0.45, 1.0)
-    axes[1].set_title("Detection of 16-copy items (baseline 0.5 = chance)", loc="left")
+    axes[1].set_title("Detection of 16-copy items", loc="left")
     for ax in axes:
         ax.set_xticks(x, [ABL_LAB[r] for r in runs])
         ax.grid(axis="x", visible=False)
@@ -343,7 +367,7 @@ def fig_ablation(abl, out):
 # ------------------------------------------------------------------ error analysis
 def fig_errors(counts, by_overlap, out):
     """Emphasis on misses (status red); everything else in neutral greys."""
-    fig, axes = plt.subplots(1, 2, figsize=(FULL, 2.3), gridspec_kw={"width_ratios": [1, 1.15]})
+    fig, axes = plt.subplots(1, 2, figsize=(6.6, 2.35), gridspec_kw={"width_ratios": [1, 1.15]})
     order = [o for o in ["hit", "false alarm", "miss", "neither"] if o in counts.index]
     shades = {"hit": INK2, "false alarm": REF_GREY, "miss": CRITICAL, "neither": LIGHT_GREY}
     bo = by_overlap.reindex(index=C.OVERLAPS, columns=order, fill_value=0)
@@ -357,14 +381,14 @@ def fig_errors(counts, by_overlap, out):
         ax.text(infl.loc[o].sum() + 3, i, f"{share_missed[o]:.0%} missed", va="center", fontsize=7, color=INK)
     ax.set_yticks(yy, [OVERLAP_LAB[o] for o in C.OVERLAPS])
     ax.invert_yaxis()
-    ax.set_xlim(0, 205)
+    ax.set_xlim(0, 192)
     ax.set_xlabel("Inflated contaminated items")
     ax.set_title("Inflated items: caught vs missed", loc="left")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=2, handlelength=1, handleheight=0.8)
     ax = axes[1]
     mt = [m for m in ["recitation", "reconstruction", "recollection"] if m in counts.columns]
     tot = counts.loc[order, mt].sum(1)
-    mshade = {"recitation": INK2, "reconstruction": REF_GREY, "recollection": CTX_GREY}
+    mshade = {"recitation": INK, "reconstruction": INK2, "recollection": REF_GREY}
     left = np.zeros(len(order))
     for m in mt:
         v = counts.loc[order, m].to_numpy() / tot.to_numpy()
@@ -388,38 +412,46 @@ def fig_errors(counts, by_overlap, out):
 
 # ------------------------------------------------------------------ comparison with literature
 def fig_literature(det, inter, out):
-    fig, axes = plt.subplots(1, 2, figsize=(FULL, 2.6), gridspec_kw={"width_ratios": [1.3, 1]})
-    ax = axes[0]
-    ref = [("Fu et al.: pretraining data", 0.49, 0.53), ("Min-K%++ paper: MIMIR", 0.52, 0.59),
-           ("FSD paper: Pile, after FSD", 0.57, 0.63), ("Fu et al.: fine-tuning data", 0.41, 0.994)]
+    fig, ax = plt.subplots(figsize=(COL, 2.05))
+    ref = [("Fu et al.: pretraining", 0.49, 0.53), ("Min-K%++ paper: MIMIR", 0.52, 0.59),
+           ("FSD paper: Pile", 0.57, 0.63), ("Fu et al.: fine-tuning", 0.41, 0.994)]
     for i, (lab, lo, hi) in enumerate(ref):
-        ax.plot([lo, hi], [i, i], color=REF_GREY, lw=4.5, solid_capstyle="round")
+        ax.plot([lo, hi], [i, i], color=REF_GREY, lw=4.5, solid_capstyle="butt")
     ours = det.groupby("overlap")["auroc"].agg(["min", "max"]).reindex(C.OVERLAPS)
     for k, o in enumerate(C.OVERLAPS):
         i = len(ref) + k + 0.4
-        ax.plot([ours.loc[o, "min"], ours.loc[o, "max"]], [i, i], color=OVERLAP_COL[o], lw=4.5, solid_capstyle="round")
+        ax.plot([ours.loc[o, "min"], ours.loc[o, "max"]], [i, i], color=OVERLAP_COL[o], lw=4.5, solid_capstyle="butt")
     ax.set_yticks([*range(len(ref)), *[len(ref) + k + 0.4 for k in range(3)]],
                   [r[0] for r in ref] + [f"This study: {OVERLAP_LAB[o].lower()}" for o in C.OVERLAPS])
     ax.axvline(0.5, color=MUTED, lw=0.8, ls=(0, (3, 2)))
-    ax.set_xlabel("AUROC range (reported vs this study)")
+    ax.text(0.5, -0.75, "chance", ha="center", va="bottom", fontsize=6.5, color=MUTED)
+    ax.set_xlabel("Reported AUROC range")
+    ax.set_xlim(0.38, 1.02)
     ax.invert_yaxis()
     ax.grid(axis="y", visible=False)
     ax.tick_params(axis="y", length=0)
-    ax.set_title("Detection AUROC: literature (grey) vs this study", loc="left")
-    ax = axes[1]
-    M = inter.to_numpy()
-    im = ax.imshow(M, cmap=DIVERGE, vmin=-1, vmax=1)
-    ax.set_xticks(range(len(inter)), inter.columns, rotation=35, ha="right")
-    ax.set_yticks(range(len(inter)), inter.index)
+    p1 = _save(fig, out, "fig10_literature_comparison")
+
+    fig, ax = plt.subplots(figsize=(COL, 2.0))
+    M = inter.to_numpy().astype(float)
+    n = len(inter)
+    mask = np.triu(np.ones_like(M, dtype=bool))
+    shown = np.ma.array(M, mask=mask)
+    greys = LinearSegmentedColormap.from_list("g", ["#f0efec", "#52514e"])
+    im = ax.imshow(shown, cmap=greys, vmin=0, vmax=1)
+    ax.set_xticks(range(n - 1), inter.columns[:-1], rotation=30, ha="right")
+    ax.set_yticks(range(1, n), inter.index[1:])
+    ax.set_xlim(-0.5, n - 1.5); ax.set_ylim(n - 0.5, 0.5)
     ax.grid(False)
     ax.tick_params(length=0)
     for sp in ax.spines.values():
         sp.set_visible(False)
     for (i, j), v in np.ndenumerate(M):
-        ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=6.5, color="white" if abs(v) > 0.7 else INK)
-    ax.set_title("Detector agreement (Spearman)", loc="left")
-    _cbar(fig, im, ax, "ρ (Samuel et al.: −0.20 to 0.32)")
-    return _save(fig, out, "fig10_literature_comparison")
+        if i > j:
+            ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=7, color="white" if v > 0.55 else INK)
+    _cbar(fig, im, ax, "Spearman ρ between detectors")
+    _save(fig, out, "fig14_detector_agreement")
+    return p1
 
 
 def fig_control(ctrl, out):
@@ -433,6 +465,8 @@ def fig_control(ctrl, out):
         ax.text(x + 0.2, i, f"{x:+.1f}", va="center", fontsize=6.8)
     ax.invert_yaxis()
     ax.set_xlim(0, 17.5)
+    ax.grid(False)
+    ax.set_title("Same gain with no inserted items", loc="left", fontsize=7.5)
     ax.set_xlabel("Accuracy gain on never-inserted items (points)")
     ax.grid(axis="y", visible=False)
     ax.tick_params(axis="y", length=0)
@@ -444,20 +478,23 @@ def fig_training_loss(root, out):
     files = sorted(Path(root, "results").glob("*_trainloss.csv"))
     if not files:
         return None
-    fig, ax = plt.subplots(figsize=(COL, 2.1))
+    fig, ax = plt.subplots(figsize=(COL, 1.8))
     for f in files:
         d = pd.read_csv(f)
         name = f.stem.replace("_trainloss", "")
         y = d["loss"].rolling(10, min_periods=1).mean()
         short = name in ("pilot", "dilution")
-        ax.plot(d["step"], y, lw=0.9 if not short else 1.1, color=REF_GREY if not short else INK2,
+        ax.plot(d["step"], y, lw=0.9 if not short else 1.2,
+                color=REF_GREY if not short else {"pilot": INK, "dilution": "#8a3b12"}[name],
                 alpha=0.9, zorder=2 if short else 1)
         if short:
             ax.annotate({"pilot": "pilot (1M filler)", "dilution": "half filler"}[name], (d["step"].iloc[-1], y.iloc[-1]),
-                        xytext=(4, -10), textcoords="offset points", fontsize=6.5, color=INK,
+                        xytext=(4, -10), textcoords="offset points", fontsize=6.5,
+                        color={"pilot": INK, "dilution": "#8a3b12"}[name],
                         bbox=dict(boxstyle="round,pad=0.15", fc=SURFACE, ec="none", alpha=0.9))
     ax.plot([], [], color=REF_GREY, lw=0.9, label="seeds 1–3, control, question-only, rank 8")
-    ax.legend(loc="upper right", fontsize=6.3)
+    ax.legend(loc="upper right", fontsize=6.5)
+    ax.grid(axis="x", visible=False)
     ax.set_xlabel("Optimiser step")
     ax.set_ylabel("Training loss (10-step mean)")
     return _save(fig, out, "fig12_training_loss")

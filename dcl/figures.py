@@ -28,7 +28,12 @@ CAT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d
 OVERLAP_COL = dict(zip(C.OVERLAPS, CAT[:3]))
 OVERLAP_LAB = {"exact": "Exact copy", "near_dup": "Near-duplicate", "paraphrase": "Paraphrase"}
 OVERLAP_MARK = {"exact": "o", "near_dup": "s", "paraphrase": "^"}
-DET_COL = dict(zip(DETECTORS.values(), CAT[3:8]))
+# Detector palette validated for colour-vision deficiency (all pairs, light surface); every detector also
+# has its own marker and line style, so identity never depends on colour alone.
+DET_COL = dict(zip(DETECTORS.values(), ["#d99a00", "#e87ba4", "#007a5e", "#6250d6", "#8a3b12"]))
+DET_MARK = dict(zip(DETECTORS.values(), ["o", "s", "^", "D", "v"]))
+DET_LS = dict(zip(DETECTORS.values(), ["-", (0, (4, 1.5)), (0, (1, 1)), (0, (5, 1.5, 1, 1.5)), (0, (2, 1, 2, 3))]))
+OVERLAP_HATCH = {"exact": "", "near_dup": "////", "paraphrase": "...."}
 BLUES = LinearSegmentedColormap.from_list("blues", ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
 DIVERGE = LinearSegmentedColormap.from_list("div", ["#e34948", "#f0efec", "#2a78d6"])
 REF_GREY, CTX_GREY, LIGHT_GREY = "#a3a29b", "#d4d3cd", "#e9e8e4"
@@ -46,7 +51,7 @@ DOSE_TINT = {1: 0.62, 4: 0.32, 16: 0.0}
 
 plt.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
-    "font.family": "DejaVu Sans", "font.size": 7.5, "axes.titlesize": 8, "axes.titleweight": "bold",
+    "font.family": "DejaVu Sans", "hatch.linewidth": 0.6, "font.size": 7.5, "axes.titlesize": 8, "axes.titleweight": "bold",
     "axes.labelsize": 7.5, "xtick.labelsize": 7, "ytick.labelsize": 7, "legend.fontsize": 7,
     "axes.edgecolor": AXIS, "axes.labelcolor": INK, "xtick.color": INK2, "ytick.color": INK2,
     "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "grid.color": GRID,
@@ -160,7 +165,7 @@ def fig_roc_curves(avg, out):
         y = np.r_[np.ones(len(d)), np.zeros(len(clean))]
         for col, lab in DETECTORS.items():
             f, t, _ = roc_curve(y, np.r_[d[col], clean[col]])
-            ax.plot(f, t, color=DET_COL[lab], lw=1.2, label=lab)
+            ax.plot(f, t, color=DET_COL[lab], ls=DET_LS[lab], lw=1.3, label=lab)
         ax.plot([0, 1], [0, 1], color=MUTED, lw=0.8, ls=(0, (3, 2)))
         ax.set_title(f"{OVERLAP_LAB[o]}, ×16", loc="left")
         ax.set_xlabel("False positive rate")
@@ -215,7 +220,7 @@ def fig_forest(agr, out):
                 r = w[(w["group"] == g) & (w["detector"] == dl)].iloc[0]
                 y = k * (len(dets) + 1.5) + j
                 ax.plot([r["rho_lo"], r["rho_hi"]], [y, y], color=DET_COL[dl], lw=1.3)
-                ax.plot(r["rho"], y, "o", color=DET_COL[dl], ms=3.6, mec=SURFACE, mew=0.6)
+                ax.plot(r["rho"], y, DET_MARK[dl], color=DET_COL[dl], ms=3.8, mec=SURFACE, mew=0.6)
         ax.axvline(0, color=INK2, lw=0.8)
         ax.set_yticks([k * (len(dets) + 1.5) + 2 for k in range(3)], [f"×{d}" for d in C.DOSES])
         ax.set_title(OVERLAP_LAB[o], loc="left")
@@ -223,7 +228,7 @@ def fig_forest(agr, out):
         ax.grid(axis="y", visible=False)
         ax.tick_params(axis="y", length=0)
         ax.invert_yaxis()
-    handles = [plt.Line2D([], [], color=DET_COL[d], marker="o", ms=3.6, lw=1.3, label=d) for d in dets]
+    handles = [plt.Line2D([], [], color=DET_COL[d], marker=DET_MARK[d], ms=3.8, lw=1.3, label=d) for d in dets]
     fig.legend(handles=handles, loc="outside lower center", ncol=5)
     return _save(fig, out, "fig06_within_cell_rho")
 
@@ -315,9 +320,10 @@ def fig_ablation(abl, out):
     x = np.arange(len(runs))
     w = 0.26
     for k, o in enumerate(C.OVERLAPS):
-        axes[0].bar(x + (k - 1) * w, a[f"infl_acc_pts_{o}"], w - 0.03, color=OVERLAP_COL[o], label=OVERLAP_LAB[o])
+        axes[0].bar(x + (k - 1) * w, a[f"infl_acc_pts_{o}"], w - 0.03, color=OVERLAP_COL[o], label=OVERLAP_LAB[o],
+                    hatch=OVERLAP_HATCH[o], edgecolor=SURFACE, linewidth=0)
         axes[1].bar(x + (k - 1) * w, a[f"auroc_Min-K%++_{o}_x16"] - 0.5, w - 0.03, bottom=0.5,
-                    color=OVERLAP_COL[o], label=OVERLAP_LAB[o])
+                    color=OVERLAP_COL[o], label=OVERLAP_LAB[o], hatch=OVERLAP_HATCH[o], edgecolor=SURFACE, linewidth=0)
     axes[0].set_ylabel("Inflation (accuracy points)")
     axes[0].set_title("Inflation, mean over doses", loc="left")
     axes[0].axhline(0, color=INK2, lw=0.8)
